@@ -1,0 +1,56 @@
+syntax="proto3";
+
+package ULZProto;
+option csharp_namespace = "ULZAsset.ProtoMod";
+/**
+* this file is as the globe-defined object reference file
+* about how or what the sub-service program 
+* may defined by the service in
+* the service-{sub_prog_name}.proto
+**/
+
+// Enum
+
+enum        EventHookPhase {
+  /// start gameset
+  gameset_start                                 = 0;
+  /// -- turn lifecycle
+  start_turn_phase                              = 10;
+  /// ---- Draw phase (ddp)
+  refill_action_card_phase                      = 20;
+  refill_event_card_phase                       = 25;
+
+  /// ---- Move phase
+  move_card_drop_phase                          = 30;
+  determine_move_phase                          = 40;
+  finish_move_phase                             = 50;
+  chara_change_phase                            = 60;
+  determine_chara_change_phase                  = 70;
+
+  /// ---- Atk/Def Phase 
+  attack_card_drop_phase                        = 80;
+  defence_card_drop_phase                       = 90;
+  determine_battle_point_phase                  = 100;
+  battle_result_phase                           = 110; //roll dice
+  damage_phase                                  = 120;
+
+  dead_chara_change_phase                       = 125;
+  determine_dead_chara_change_phase             = 130;
+
+  change_initiative_phase                       = 140;
+
+
+  /// -- endof turn lifecycle
+  finish_turn_phase                             = 150;
+
+  /// endof game set
+  gameset_end                                   = 160;
+}
+enum        EventHookType {
+  Instant                                       = 0;
+  Before                                        = 1;
+  After                                         = 2;
+  Proxy                                         = 3;
+}
+
+
