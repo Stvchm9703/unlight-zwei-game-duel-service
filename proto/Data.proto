@@ -4,16 +4,13 @@ import "common.proto";
 import  "EventHookPhase.proto";
 
 package ULZProto;
+
 option  csharp_namespace         = "ULZAsset.ProtoMod";
-option  go_package               = "proto";
+
 
 // -------------------------------------------------------------
 // ANCHOR: data-struct for all game struct
 // SECTION: Data.proto
-// -------------------------------------------------------------
-
-// Enum
-// -------------------------------------------------------------
 enum    PlayerSide  {
     HOST                        = 0;
     DUELER                      = 1;

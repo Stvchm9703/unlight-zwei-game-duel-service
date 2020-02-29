@@ -3,8 +3,9 @@ syntax  = "proto3";
 import  "EventHookPhase.proto";
 import  "Data.proto";
 package ULZProto;
+
 option  csharp_namespace         = "ULZAsset.ProtoMod";
-option  go_package               = "proto";
+
 
 // ANCHOR: message-struct for game-service
 // SECTION: message.proto
