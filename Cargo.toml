@@ -6,11 +6,15 @@ edition = "2018"
 publish = false
 license = "MIT"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-[[bin]]
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[[run]]
 name = "ulz_game_duel_service"
 path = "src/main.rs"
+
+# [[bin]]
+# name = "test-conn"
+# path = "src/server_impl/test_cache_conn.rs"
 
 [dependencies]
 redis = "0.15.1"

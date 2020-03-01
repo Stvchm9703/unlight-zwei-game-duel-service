@@ -46,18 +46,67 @@ pub mod draw_phase;
 pub mod event_phase;
 pub mod instance_ec;
 pub mod move_phase;
+use crate::server_impl::cache_conn::RedisBox;
+pub async fn test_with_config(path: &str) -> GameDuelServiceBackend {
+    let test_cache_db: config::CfDatabase = config::CfDatabase {
+        connector: Some("redis".to_string()),
+        worker_node: Some(1),
+        host: Some("192.168.0.110".to_string()),
+        port: Some(6379),
+        username: Some("".to_string()),
+        password: Some("".to_string()),
+        database: Some("redis".to_string()),
+        filepath: Some("".to_string()),
+    };
 
-pub async fn init_with_config(path: &str) -> GameDuelServiceBackend {
+    let mut test_gameset: ulz_proto::GameDataSet = ulz_proto::GameDataSet::default();
+    test_gameset.room_key = "h1234".to_string();
+
     let ymp = config::parse(path).await;
-    // let rds = Vec::new();
-    loop {
-        break;
-    }
-    let backend = GameDuelServiceBackend {
+    let mut backend = GameDuelServiceBackend {
         rooms: Vec::new(),
         rds_conn: Box::new(redis::Client::open("redis://127.0.0.1:6379").unwrap()),
     };
-    println!("hi init");
+
+    match backend.init_cache_conn(test_cache_db).await {
+        Ok(r) => {
+            println!("ok");
+        }
+        Err(e) => {
+            println!("{}", e);
+        }
+    };
+
+    backend.set_room_data(test_gameset).await;
+    let ky = backend.get_room_data("h1234").await;
+    println!("{:?}", ky.unwrap());
+    return backend;
+}
+pub async fn init_with_config(path: &str) -> GameDuelServiceBackend {
+    let test_cache_db: config::CfDatabase = config::CfDatabase {
+        connector: Some("redis".to_string()),
+        worker_node: Some(1),
+        host: Some("192.168.0.110".to_string()),
+        port: Some(6379),
+        username: Some("".to_string()),
+        password: Some("".to_string()),
+        database: Some("redis".to_string()),
+        filepath: Some("".to_string()),
+    };
+    let ymp = config::parse(path).await;
+    let mut backend = GameDuelServiceBackend {
+        rooms: Vec::new(),
+        rds_conn: Box::new(redis::Client::open("redis://127.0.0.1:6379").unwrap()),
+    };
+    match backend.init_cache_conn(test_cache_db).await {
+        Ok(r) => {
+            println!("ok");
+        }
+        Err(e) => {
+            println!("{}", e);
+        }
+    };
+
     return backend;
 }
 
@@ -68,11 +117,9 @@ pub async fn run_server() -> Result<(), Box<dyn std::error::Error>> {
     println!("RouteGuideServer listening on: {}", addr);
 
     let backend = init_with_config("").await;
-
     let svc = GameDuelServiceServer::new(backend);
     println!("running on: {}", addr);
     Server::builder().add_service(svc).serve(addr).await?;
-
     Ok(())
 }
 
@@ -81,6 +128,9 @@ pub struct GameDuelServiceBackend {
     rooms: Vec<Box<ulz_proto::GameDataSet>>,
     rds_conn: Box<redis::Client>,
 }
+
+// impl Copy for GameDuelServiceBackend{}
+
 
 #[tonic::async_trait]
 impl GameDuelService for GameDuelServiceBackend {

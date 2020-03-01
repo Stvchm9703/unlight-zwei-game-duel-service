@@ -26,5 +26,6 @@ mod server_impl;
 use server_impl::GameDuelServiceBackend;
 
 fn main() {
-    server_impl::run_server();
+    // server_impl::run_server();
+    server_impl::test_with_config("");
 }
