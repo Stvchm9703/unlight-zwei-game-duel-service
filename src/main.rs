@@ -1,5 +1,12 @@
-#![allow(unused_imports, dead_code, unreachable_code)]
-
+#![allow(
+    unused_imports,
+    dead_code,
+    unreachable_code,
+    deprecated,
+    unused_variables,
+    unused_must_use
+)]
+#![recursion_limit = "256"]
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 use std::pin::Pin;

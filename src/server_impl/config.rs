@@ -9,25 +9,25 @@ use toml;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ConfTmp {
-    APIServer: Option<CfAPIServer>,
-    Database: Option<CfDatabase>,
-    CacheDb: Option<CfDatabase>,
-    AuthServer: Option<CfAPIServer>,
+    pub api_server: Option<CfAPIServer>,
+    pub database: Option<CfDatabase>,
+    pub cache_db: Option<CfDatabase>,
+    pub auth_server: Option<CfAPIServer>,
 }
 impl ConfTmp {
     // add code here
     pub fn new() -> ConfTmp {
         ConfTmp {
-            APIServer: Option::default(),
-            Database: Option::default(),
-            CacheDb: Option::default(),
-            AuthServer: Option::default(),
+            api_server: Option::default(),
+            database: Option::default(),
+            cache_db: Option::default(),
+            auth_server: Option::default(),
         }
     }
 }
 #[derive(Serialize, Deserialize, Debug)]
 pub struct CfAPIServer {
-    pub ConnType: Option<String>,
+    pub conn_type: Option<String>,
     pub ip: Option<String>,
     pub port: Option<u16>,
     pub max_pool_size: Option<u16>,
@@ -39,7 +39,7 @@ impl CfAPIServer {
     // add code here
     pub fn new() -> CfAPIServer {
         CfAPIServer {
-            ConnType: Option::default(),
+            conn_type: Option::default(),
             ip: Option::default(),
             port: Option::default(),
             max_pool_size: Option::default(),
@@ -78,7 +78,7 @@ impl CfDatabase {
     }
 }
 
-pub fn parse(path: &str) -> ConfTmp {
+pub async fn parse(path: &str) -> ConfTmp {
     let mut config_toml = String::new();
 
     let mut file = match File::open(path) {

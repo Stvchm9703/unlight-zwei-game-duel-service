@@ -1,4 +1,5 @@
 #![allow(unused_imports, dead_code, unreachable_code)]
+
 use std::boxed::Box;
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
@@ -37,18 +38,17 @@ use ulz_proto::{
     GdadConfirmReq, GdadDiceResult, GdadResultResp, MovePhaseOpt,
 };
 
-mod ad_phase;
-mod basic_func;
-mod cache_conn;
-mod config;
-mod draw_phase;
-mod event_phase;
-mod instance_ec;
-mod move_phase;
+pub mod ad_phase;
+pub mod basic_func;
+pub mod cache_conn;
+pub mod config;
+pub mod draw_phase;
+pub mod event_phase;
+pub mod instance_ec;
+pub mod move_phase;
 
-pub fn init_with_config(path: &str) -> GameDuelServiceBackend {
-    let ymp = config::parse(path);
-    println!("{:?}", ymp);
+pub async fn init_with_config(path: &str) -> GameDuelServiceBackend {
+    let ymp = config::parse(path).await;
     // let rds = Vec::new();
     loop {
         break;
@@ -57,6 +57,7 @@ pub fn init_with_config(path: &str) -> GameDuelServiceBackend {
         rooms: Vec::new(),
         rds_conn: Box::new(redis::Client::open("redis://127.0.0.1:6379").unwrap()),
     };
+    println!("hi init");
     return backend;
 }
 
@@ -66,11 +67,10 @@ pub async fn run_server() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("RouteGuideServer listening on: {}", addr);
 
-    let backend = GameDuelServiceBackend {
-        rooms: Vec::new(),
-        rds_conn: Box::new(redis::Client::open("redis://127.0.0.1:6379")?),
-    };
+    let backend = init_with_config("").await;
+
     let svc = GameDuelServiceServer::new(backend);
+    println!("running on: {}", addr);
     Server::builder().add_service(svc).serve(addr).await?;
 
     Ok(())
@@ -90,31 +90,31 @@ impl GameDuelService for GameDuelServiceBackend {
     // -------------------------------------------------------------------------------
     async fn create_game(
         &self,
-        request: Request<GdCreateReq>,
+        _request: Request<GdCreateReq>,
     ) -> Result<Response<GameDataSet>, tonic::Status> {
-        return basic_func::create_game(&self, request);
+        return basic_func::create_game(&self, _request);
     }
 
     async fn get_game_data(
         &self,
-        request: Request<GdGetInfoReq>,
+        _request: Request<GdGetInfoReq>,
     ) -> Result<Response<GameDataSet>, tonic::Status> {
-        return basic_func::get_game_data(&self, request);
+        return basic_func::get_game_data(&self, _request);
     }
 
     async fn quit_game(
         &self,
-        request: Request<GdCreateReq>,
+        _request: Request<GdCreateReq>,
     ) -> Result<Response<Empty>, tonic::Status> {
-        return basic_func::quit_game(&self, request);
+        return basic_func::quit_game(&self, _request);
     }
 
     type ServerBroadcastStream = mpsc::Receiver<Result<GdBroadcastResp, tonic::Status>>;
     async fn server_broadcast(
         &self,
-        request: Request<GdGetInfoReq>,
+        _request: Request<GdGetInfoReq>,
     ) -> Result<Response<Self::ServerBroadcastStream>, tonic::Status> {
-        return basic_func::server_broadcast(&self, request);
+        return basic_func::server_broadcast(&self, _request);
     }
     // -------------------------------------------------------------------------------
     //  instance get/set event-card:
@@ -122,15 +122,15 @@ impl GameDuelService for GameDuelServiceBackend {
     // -------------------------------------------------------------------------------
     async fn inst_set_event_card(
         &self,
-        request: tonic::Request<GdInstanceDt>,
+        _request: tonic::Request<GdInstanceDt>,
     ) -> Result<tonic::Response<Empty>, tonic::Status> {
-        return instance_ec::inst_set_event_card(&self, request);
+        return instance_ec::inst_set_event_card(&self, _request);
     }
     async fn inst_get_event_card(
         &self,
-        request: tonic::Request<GdGetInfoReq>,
+        _request: tonic::Request<GdGetInfoReq>,
     ) -> Result<tonic::Response<GdInstanceDt>, tonic::Status> {
-        return instance_ec::inst_get_event_card(&self, request);
+        return instance_ec::inst_get_event_card(&self, _request);
     }
     // -------------------------------------------------------------------------------
     //   Draw Phase confirm :
@@ -138,9 +138,9 @@ impl GameDuelService for GameDuelServiceBackend {
     // -------------------------------------------------------------------------------
     async fn draw_phase_confirm(
         &self,
-        request: Request<GdGetInfoReq>,
+        _request: Request<GdGetInfoReq>,
     ) -> Result<Response<Empty>, tonic::Status> {
-        return draw_phase::draw_phase_confirm(&self, request);
+        return draw_phase::draw_phase_confirm(&self, _request);
     }
     // -------------------------------------------------------------------------------
     //  Move Phase :
@@ -148,15 +148,15 @@ impl GameDuelService for GameDuelServiceBackend {
     // -------------------------------------------------------------------------------
     async fn move_phase_confirm(
         &self,
-        request: Request<GdMoveConfirmReq>,
+        _request: Request<GdMoveConfirmReq>,
     ) -> Result<Response<Empty>, Status> {
-        return move_phase::move_phase_confirm(&self, request);
+        return move_phase::move_phase_confirm(&self, _request);
     }
     async fn move_phase_result(
         &self,
-        request: Request<GdGetInfoReq>,
+        _request: Request<GdGetInfoReq>,
     ) -> Result<Response<GdMoveConfirmResp>, Status> {
-        return move_phase::move_phase_result(&self, request);
+        return move_phase::move_phase_result(&self, _request);
     }
     // -------------------------------------------------------------------------------
     //  Event Phase :
@@ -164,15 +164,15 @@ impl GameDuelService for GameDuelServiceBackend {
     // -------------------------------------------------------------------------------
     async fn event_phase_result(
         &self,
-        request: Request<GdGetInfoReq>,
+        _request: Request<GdGetInfoReq>,
     ) -> Result<Response<GdPhaseConfirmResp>, tonic::Status> {
-        return event_phase::event_phase_result(&self, request);
+        return event_phase::event_phase_result(&self, _request);
     }
     async fn event_phase_confirm(
         &self,
-        request: Request<GdPhaseConfirmReq>,
+        _request: Request<GdPhaseConfirmReq>,
     ) -> Result<Response<Empty>, tonic::Status> {
-        return event_phase::event_phase_confirm(&self, request);
+        return event_phase::event_phase_confirm(&self, _request);
     }
     // -------------------------------------------------------------------------------
     // Atk/Def Phase :
@@ -180,22 +180,22 @@ impl GameDuelService for GameDuelServiceBackend {
     // -------------------------------------------------------------------------------
     async fn ad_phase_confirm(
         &self,
-        request: Request<GdadConfirmReq>,
+        _request: Request<GdadConfirmReq>,
     ) -> Result<Response<Empty>, Status> {
-        return ad_phase::ad_phase_confirm(&self, request);
+        return ad_phase::ad_phase_confirm(&self, _request);
     }
     async fn ad_phase_result(
         &self,
-        request: Request<GdGetInfoReq>,
+        _request: Request<GdGetInfoReq>,
     ) -> Result<Response<GdadResultResp>, Status> {
-        return ad_phase::ad_phase_result(&self, request);
+        return ad_phase::ad_phase_result(&self, _request);
     }
 
     async fn ad_phase_dice_result(
         &self,
-        request: Request<GdGetInfoReq>,
+        _request: Request<GdGetInfoReq>,
     ) -> Result<Response<GdadDiceResult>, Status> {
-        return ad_phase::ad_phase_dice_result(&self, request);
+        return ad_phase::ad_phase_dice_result(&self, _request);
     }
     // -------------------------------------------------------------------------------
     //  Change character phase :
@@ -203,13 +203,13 @@ impl GameDuelService for GameDuelServiceBackend {
     // -------------------------------------------------------------------------------
     async fn change_phase_confirm(
         &self,
-        request: tonic::Request<GdChangeConfirmReq>,
+        _request: tonic::Request<GdChangeConfirmReq>,
     ) -> Result<tonic::Response<Empty>, tonic::Status> {
         Ok(Response::new(Empty::default()))
     }
     async fn change_phase_result(
         &self,
-        request: tonic::Request<GdGetInfoReq>,
+        _request: tonic::Request<GdGetInfoReq>,
     ) -> Result<tonic::Response<Empty>, tonic::Status> {
         Ok(Response::new(Empty::default()))
     }
