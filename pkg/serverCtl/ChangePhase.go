@@ -11,9 +11,7 @@ import (
 )
 
 func (this *ULZGameDuelServiceBackend) ChangePhaseConfirm(context.Context, *pb.GDChangeConfirmReq) (*pb.Empty, error) {
-
 	return nil, status.Error(codes.Unimplemented, "CHANGE_PHASE_CONFIRM")
-
 }
 func (this *ULZGameDuelServiceBackend) ChangePhaseResult(context.Context, *pb.GDGetInfoReq) (*pb.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "CHANGE_PHASE_RESULT")

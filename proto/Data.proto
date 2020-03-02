@@ -121,8 +121,21 @@ message EventCard {
     int32                       down_val                = 5;
     EventCardPos                position                = 6;
     bool                        is_invert               = 7;
+    EventCardFunc               func_mount              = 8;
+    int32                       mount_val               = 9;
 }
 
+enum    EventCardFunc {
+    null                        = 0;
+    occur_chance_event          = 1;
+    occur_heal_event            = 2;
+    occur_cure_event            = 3;
+    occur_quick_event           = 4;
+    occur_curse_event           = 5;
+    occur_chalice_event         = 6;
+    occur_poison_event          = 7;
+    occur_damage_event          = 8;
+}
 
 message SkillSet {
     int32                       id                      = 1;
