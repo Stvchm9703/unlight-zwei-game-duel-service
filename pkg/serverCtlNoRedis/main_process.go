@@ -1,4 +1,4 @@
-package authServer
+package serverCtlNoRedis
 
 import (
 	"log"
@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"syscall"
 
-	cf "ULZGameDuelService/config"
+	cf "ULZGameDuelService/pkg/config"
 	pb "ULZGameDuelService/proto"
 
 	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
@@ -16,7 +16,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	// Static files
-	// _ "RoomStatus/statik"
+	// _ "ULZGameDuelService/statik"
 )
 
 var (
@@ -26,7 +26,7 @@ var (
 
 func ServerMainProcess(testing_config *cf.ConfTmp) {
 	log.Println("start run")
-	addr := testing_config.AuthServer.IP + ":" + strconv.Itoa(testing_config.AuthServer.Port)
+	addr := testing_config.APIServer.IP + ":" + strconv.Itoa(testing_config.APIServer.Port)
 	lis, err := net.Listen("tcp", addr)
 	if err != nil {
 		panic("Failed to listen:\t" + err.Error())
@@ -34,14 +34,14 @@ func ServerMainProcess(testing_config *cf.ConfTmp) {
 	// d := insecure.Cert
 	// log.Println(d)
 	s := grpc.NewServer(
+		// grpc.Creds(credentials.NewServerTLSFromCert(insecure.Cert)),
 		grpc.UnaryInterceptor(grpc_validator.UnaryServerInterceptor()),
 		grpc.StreamInterceptor(grpc_validator.StreamServerInterceptor()),
 	)
 
 	RMServer := New(testing_config)
 
-	pb.RegisterCreditsAuthServer(
-		s, RMServer)
+	pb.RegisterRoomServiceServer(s, RMServer)
 	log.Println("Serving gRPC on https://", addr)
 	go func() {
 		panic(s.Serve(lis))
@@ -50,7 +50,7 @@ func ServerMainProcess(testing_config *cf.ConfTmp) {
 
 	// call your cleanup method with this channel as a routine
 }
-func beforeGracefulStop(ss *grpc.Server, rms *CreditsAuthBackend) {
+func beforeGracefulStop(ss *grpc.Server, rms *ULZGameDuelServiceBackend) {
 	log.Println("BeforeGracefulStop")
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)

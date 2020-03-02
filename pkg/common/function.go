@@ -2,7 +2,6 @@ package common
 
 import (
 	"context"
-	"encoding/json"
 	"hash/fnv"
 	"io"
 	"log"
@@ -10,11 +9,16 @@ import (
 	"strconv"
 )
 
+var (
+	DebugTestRun = false
+	Mode         = "prod"
+)
+
 // HashText: common hash text function
 func HashText(s string) string {
 	h := fnv.New32a()
 	h.Write([]byte(s))
-	return strconv.FormatUint(uint64(h.Sum32()), 16)
+	return strconv.FormatUint(uint64(h.Sum32()), 36)
 }
 
 func SetLog(path string) io.Writer {
@@ -29,10 +33,8 @@ func SetLog(path string) io.Writer {
 	return wrt
 }
 
-func PrintReqLog(ctx context.Context, req interface{}) {
-	jsoon, _ := json.Marshal(ctx)
-	log.Println(string(jsoon))
-
-	jsoon, _ = json.Marshal(req)
-	log.Println(string(jsoon))
+func PrintReqLog(ctx context.Context, methodAddr string, req interface{}) {
+	if DebugTestRun {
+		log.Printf("\n -\tctx:\t%#v \n -\tmethodAddr:\t%#v \n -\tReqInfo:\t%#v\n", ctx, methodAddr, req)
+	}
 }

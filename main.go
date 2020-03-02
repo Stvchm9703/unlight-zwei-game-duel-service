@@ -1,7 +1,7 @@
 package main
 
 import (
-	_ "github.com/gogo/googleapis"
+	// _ "github.com/gogo/googleapis"
 	_ "github.com/gogo/protobuf/proto"
 	_ "github.com/golang/protobuf/protoc-gen-go"
 

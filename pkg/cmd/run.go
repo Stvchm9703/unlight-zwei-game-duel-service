@@ -7,8 +7,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	wb "ULZGameDuelService/authServer"
-	Cf "ULZGameDuelService/config"
+	cm "ULZGameDuelService/pkg/common"
+	Cf "ULZGameDuelService/pkg/config"
+
+	wbs "ULZGameDuelService/pkg/serverCtl"
+	wb "ULZGameDuelService/pkg/serverCtlNoRedis"
 
 	"github.com/spf13/cobra"
 )
@@ -19,6 +22,7 @@ var runCMDInput = struct {
 	checkImpTree bool
 	rootPath     string
 	skipFol      string
+	noRedis      bool
 }{}
 
 var runCmd = &cobra.Command{
@@ -30,7 +34,7 @@ var runCmd = &cobra.Command{
 		if len(args) > 0 {
 			fmt.Println(args)
 		}
-		// runCMDInput.cfPath, _ = os.Getwd()
+		// , _ = os.Getwd()
 		fmt.Println(runCMDInput.cfPath)
 
 		var configPoint *Cf.ConfTmp
@@ -42,8 +46,19 @@ var runCmd = &cobra.Command{
 		}
 		log.Println(configPoint)
 		log.Println(runCMDInput.mode)
+
 		if err == nil {
-			wb.ServerMainProcess(configPoint)
+			// cm.
+			// Wb.ServerMainProcess(configPoint, callPath, runCMDInput.mode)
+			if runCMDInput.mode == "dev" || runCMDInput.mode == "test" {
+				cm.DebugTestRun = true
+			}
+			cm.Mode = runCMDInput.mode
+			if runCMDInput.noRedis {
+				wb.ServerMainProcess(configPoint)
+			} else {
+				wbs.ServerMainProcess(configPoint)
+			}
 		} else {
 			panic(err)
 		}
@@ -64,6 +79,12 @@ func init() {
 		"mode", "m",
 		"prod",
 		"server running mode [prod / dev / test]")
+
+	runCmd.Flags().BoolVarP(
+		&runCMDInput.noRedis,
+		"no-redis", "R",
+		false,
+		"server run without redis")
 
 	rootCmd.AddCommand(runCmd)
 }

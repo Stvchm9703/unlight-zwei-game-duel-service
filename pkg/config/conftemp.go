@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"path/filepath"
 
 	"github.com/BurntSushi/toml"
 	"gopkg.in/yaml.v2"
@@ -53,25 +52,32 @@ type CfTDatabase struct {
 	Filepath   string `toml:"filepath" json:"filepath" yaml:"filepath"`
 }
 
-// CreateConfigToml : Quick create
-func CreateConfigToml(path string, initForm *ConfTmp) {
-	fmt.Println("= ---- creating config.toml -----")
-	fileLocate, err := os.Create(filepath.Join(path, "config.toml"))
-	if err != nil {
-		fmt.Println(err)
-		panic(err)
-	}
-
-	Writer := bufio.NewWriter(fileLocate)
-	EncoderA := toml.NewEncoder(Writer)
-	EncoderA.Encode(initForm)
-	fmt.Println("= ")
-}
+// // CreateConfigToml : Quick create
+// func CreateConfigToml(path string, initForm *ConfTmp) {
+// 	fmt.Println("= ---- creating config.toml -----")
+// 	fileLocate, err := os.Create(path)
+// 	if err != nil {
+// 		fmt.Println(err)
+// 		panic(err)
+// 	}
+// 	if initForm.APIServer.IP == "" {
+// 		initForm.APIServer.IP = "127.0.0.1"
+// 	}
+// 	if initForm.APIServer.Port == "" {
+// 		initForm.APIServer.Port = 11000
+// 	}
+// 	Writer := bufio.NewWriter(fileLocate)
+// 	EncoderA := toml.NewEncoder(Writer)
+// 	EncoderA.Encode(initForm)
+// 	fmt.Println("= ")
+// 	Writer.Flush()
+// }
 
 // CreateConfigYaml : Quick create
 func CreateConfigYaml(path string, initForm *ConfTmp) {
 	fmt.Println("= ---- creating config.yaml -----")
-	fileLocate, err := os.Create(filepath.Join(path, "config.yaml"))
+	fileLocate, err := os.Create(path)
+
 	if err != nil {
 		fmt.Println(err)
 		panic(err)
