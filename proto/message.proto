@@ -49,6 +49,7 @@ message GDGetInfoReq {
     PlayerSide                  side                        = 2;
     EventHookPhase              current_phase               = 3;
     bool                        is_watcher                  = 4;
+    string                      income_user_id              = 5;
 }
 // -------------------------------------------------------------
 
