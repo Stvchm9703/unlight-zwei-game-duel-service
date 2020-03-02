@@ -2,6 +2,7 @@ syntax="proto3";
 
 package ULZProto;
 
+option go_package = "proto";
 option csharp_namespace = "ULZAsset.ProtoMod";
 
 // ----------------------------------------------------
