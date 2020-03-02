@@ -13,11 +13,11 @@ require (
 	github.com/godror/godror v0.11.2 // indirect
 	github.com/gogo/googleapis v1.3.0 // indirect
 	github.com/gogo/grpc-example v0.0.0-20190407094907-47d5c98b94b9 // indirect
-	github.com/gogo/protobuf v1.3.1 // indirect
-	github.com/golang/protobuf v1.3.3 // indirect
+	github.com/gogo/protobuf v1.3.1
+	github.com/golang/protobuf v1.3.3
 	github.com/google/flatbuffers v1.11.0 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.2.0
-	github.com/grpc-ecosystem/grpc-gateway v1.12.1 // indirect
+	github.com/grpc-ecosystem/grpc-gateway v1.12.1
 	github.com/jackc/pgx v3.6.2+incompatible // indirect
 	github.com/jinzhu/gorm v1.9.12
 	github.com/knq/snaker v0.0.0-20181215144011-2bc8a4db4687 // indirect
@@ -25,7 +25,7 @@ require (
 	github.com/mattn/go-runewidth v0.0.8 // indirect
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible // indirect
 	github.com/micro/go-micro v1.16.0 // indirect
-	github.com/mwitkow/go-proto-validators v0.3.0 // indirect
+	github.com/mwitkow/go-proto-validators v0.3.0
 	github.com/onsi/ginkgo v1.8.0 // indirect
 	github.com/onsi/gomega v1.5.0 // indirect
 	github.com/panjf2000/ants/v2 v2.2.2 // indirect
@@ -39,7 +39,6 @@ require (
 	golang.org/x/crypto v0.0.0-20200128174031-69ecbb4d6d5d
 	golang.org/x/sys v0.0.0-20200124204421-9fbb57f87de9 // indirect
 	golang.org/x/tools v0.0.0-20200131211209-ecb101ed6550 // indirect
-
 	google.golang.org/grpc v1.26.0
 	gopkg.in/jcmturner/gokrb5.v7 v7.5.0 // indirect
 	gopkg.in/yaml.v2 v2.2.7
