@@ -86,6 +86,13 @@ func (this *GDMoveConfirmResp) Validate() error {
 	return nil
 }
 func (this *GDADConfirmReq) Validate() error {
+	for _, item := range this.TriggerSkl {
+		if item != nil {
+			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
+				return github_com_mwitkow_go_proto_validators.FieldError("TriggerSkl", err)
+			}
+		}
+	}
 	for _, item := range this.UpdateCard {
 		if item != nil {
 			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
