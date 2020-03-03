@@ -13,11 +13,12 @@ import (
 
 // ConfTmp : System Configuration object
 type ConfTmp struct {
-	TemplServer CfTemplServer `toml:"tmpl_server" json:"tmpl_server" yaml:"tmpl_server"`
-	APIServer   CfAPIServer   `toml:"api_server" json:"api_server" yaml:"api_server"`
-	Database    CfTDatabase   `toml:"database" json:"database" yaml:"database"`
-	CacheDb     CfTDatabase   `toml:"cache_db" json:"cache_db" yaml:"cache_db"`
-	AuthServer  CfAPIServer   `toml:"auth_server" json:"auth_server" yaml:"auth_server"`
+	TemplServer       CfTemplServer   `toml:"tmpl_server" json:"tmpl_server" yaml:"tmpl_server"`
+	APIServer         CfAPIServer     `toml:"api_server" json:"api_server" yaml:"api_server"`
+	Database          CfTDatabase     `toml:"database" json:"database" yaml:"database"`
+	CacheDb           CfTDatabase     `toml:"cache_db" json:"cache_db" yaml:"cache_db"`
+	AuthServer        CfAPIServer     `toml:"auth_server" json:"auth_server" yaml:"auth_server"`
+	EffectCalcService []CfGrpcService `toml:"effect_calc_service" json:"effect_calc_service" yaml:"effect_calc_service"`
 }
 
 type CfTemplServer struct {
@@ -50,6 +51,13 @@ type CfTDatabase struct {
 	Password   string `toml:"password" json:"password" yaml:"password"`
 	Database   string `toml:"database" json:"database" yaml:"database"`
 	Filepath   string `toml:"filepath" json:"filepath" yaml:"filepath"`
+}
+
+type CfGrpcService struct {
+	ConnType    string `toml:"conn_type" json:"conn_type" yaml:"conn_type"`
+	IP          string `toml:"ip" json:"ip" yaml:"ip"`
+	Port        int    `toml:"port" json:"port" yaml:"port"`
+	ServiceName string `toml:"service_name" json:"service_name" yaml:"service_name"`
 }
 
 // // CreateConfigToml : Quick create

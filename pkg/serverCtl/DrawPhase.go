@@ -53,6 +53,11 @@ func (this *ULZGameDuelServiceBackend) DrawPhaseConfirm(ctx context.Context, req
 
 	if returner.IsHostReady && returner.IsDuelReady {
 		// broadcast for ready next phase
+		returner.IsDuelReady = false
+		returner.IsDuelReady = false
+		returner.EventPhase = pb.EventHookPhase_move_card_drop_phase
+		returner.HookType = pb.EventHookType_Before
+		// check event hook
 	}
 	return &pb.Empty{}, nil
 	// return nil, status.Error(codes.Unimplemented, "DRAW_PHASE_CONFIRM")
