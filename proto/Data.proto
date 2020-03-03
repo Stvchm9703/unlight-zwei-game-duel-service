@@ -39,10 +39,11 @@ enum    RangeType {
 }
 
 enum    MovePhaseOpt        {
-    FORWARD                 = 0;
-    BACKWARD                = 1;
-    STAY                    = 2;
-    CHANGE                  = 3;
+    NO_MOVE                     = 0;
+    FORWARD                     = 1;
+    BACKWARD                    = 2;
+    STAY                        = 3;
+    CHANGE                      = 4;
 }
 // -------------------------------------------------------------
 

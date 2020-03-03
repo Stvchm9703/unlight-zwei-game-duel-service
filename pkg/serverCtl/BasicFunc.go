@@ -52,7 +52,7 @@ func (this *ULZGameDuelServiceBackend) CreateGame(ctx context.Context, req *pb.G
 		Range:           pb.RangeType_MIDDLE,
 		EventPhase:      pb.EventHookPhase_gameset_start,
 		HookType:        pb.EventHookType_Before,
-		PhaseAb:         0,
+		FirstAttack:     pb.PlayerSide_HOST,
 		CurrPhase:       0,
 		IsHostReady:     false,
 		IsDuelReady:     false,
@@ -66,18 +66,28 @@ func (this *ULZGameDuelServiceBackend) CreateGame(ctx context.Context, req *pb.G
 		log.Println(err)
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
+	// event-card-control
 	new_gameset.HostEventCardDeck = genCardSet(150, 0)
 	new_gameset.DuelEventCardDeck = genCardSet(150, 0)
-	hecd := req.RoomKey + ":HtEvtCrdDk"
-	decd := req.RoomKey + ":DlEvtCrdDk"
-	if _, err := wkbox.SetPara(&hecd, new_gameset.HostCardDeck); err != nil {
+	tmpKey := req.RoomKey + ":HtEvtCrdDk"
+	if _, err := wkbox.SetPara(&tmpKey, new_gameset.HostCardDeck); err != nil {
 		log.Println(err)
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	if _, err := wkbox.SetPara(&decd, new_gameset.DuelCardDeck); err != nil {
+	tmpKey = req.RoomKey + ":DlEvtCrdDk"
+	if _, err := wkbox.SetPara(&tmpKey, new_gameset.DuelCardDeck); err != nil {
 		log.Println(err)
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
+	// move-instance
+	tmpKey = req.RoomKey + ":MvPhMod"
+	move_instance := pb.MovePhaseSnapMod{}
+	if _, err := wkbox.SetPara(&tmpKey, move_instance); err != nil {
+		log.Println(err)
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	// ad-phase-instance
 
 	return &new_gameset, nil
 }
