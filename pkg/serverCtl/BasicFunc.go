@@ -40,25 +40,23 @@ func (this *ULZGameDuelServiceBackend) CreateGame(ctx context.Context, req *pb.G
 	}
 	new_gameset := pb.GameDataSet{
 		// by request
-		RoomKey:           req.RoomKey,
-		HostId:            req.HostId,
-		DuelId:            req.DuelerId,
-		Nvn:               req.Nvn,
-		HostCardDeck:      req.HostCardDeck,
-		DuelCardDeck:      req.DuelCardDeck,
-		GameTurn:          0,
-		HostCurrCardKey:   0,
-		DuelCurrCardKey:   0,
-		HostEventCardDeck: genCardSet(150, 0),
-		DuelEventCardDeck: genCardSet(150, 0),
-		Range:             pb.RangeType_MIDDLE,
-		EventPhase:        pb.EventHookPhase_gameset_start,
-		HookType:          pb.EventHookType_Before,
-		PhaseAb:           0,
-		CurrPhase:         0,
-		IsHostReady:       false,
-		IsDuelReady:       false,
-		EffectCounter:     nil,
+		RoomKey:         req.RoomKey,
+		HostId:          req.HostId,
+		DuelId:          req.DuelerId,
+		Nvn:             req.Nvn,
+		HostCardDeck:    req.HostCardDeck,
+		DuelCardDeck:    req.DuelCardDeck,
+		GameTurn:        0,
+		HostCurrCardKey: 0,
+		DuelCurrCardKey: 0,
+		Range:           pb.RangeType_MIDDLE,
+		EventPhase:      pb.EventHookPhase_gameset_start,
+		HookType:        pb.EventHookType_Before,
+		PhaseAb:         0,
+		CurrPhase:       0,
+		IsHostReady:     false,
+		IsDuelReady:     false,
+		EffectCounter:   nil,
 	}
 
 	// new_gameset.HostEvent
@@ -68,6 +66,19 @@ func (this *ULZGameDuelServiceBackend) CreateGame(ctx context.Context, req *pb.G
 		log.Println(err)
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
+	new_gameset.HostEventCardDeck = genCardSet(150, 0)
+	new_gameset.DuelEventCardDeck = genCardSet(150, 0)
+	hecd := req.RoomKey + ":HtEvtCrdDk"
+	decd := req.RoomKey + ":DlEvtCrdDk"
+	if _, err := wkbox.SetPara(&hecd, new_gameset.HostCardDeck); err != nil {
+		log.Println(err)
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if _, err := wkbox.SetPara(&decd, new_gameset.DuelCardDeck); err != nil {
+		log.Println(err)
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
 	return &new_gameset, nil
 }
 

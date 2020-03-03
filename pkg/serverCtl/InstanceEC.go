@@ -14,8 +14,8 @@ import (
 )
 
 var (
-	InstSetECMsg     *pb.GDBroadcastResp = &pb.GDBroadcastResp{}
-	InstMsgStoreTime int                 = 15000
+	// InstSetECMsg     *pb.GDBroadcastResp = &pb.GDBroadcastResp{}
+	InstMsgStoreTime int = 15000
 )
 
 func (this *ULZGameDuelServiceBackend) InstSetEventCard(ctx context.Context, req *pb.GDInstanceDT) (*pb.Empty, error) {
@@ -33,19 +33,39 @@ func (this *ULZGameDuelServiceBackend) InstSetEventCard(ctx context.Context, req
 	instKey := req.RoomKey + "_instMsg@" + req.Side.String()
 	wkbox.SetParaWTO(&instKey, req, InstMsgStoreTime)
 
-	var tmpSet pb.GameDataSet
-	if _, err := wkbox.GetPara(&req.RoomKey, &tmpSet); err != nil {
+	var tmpSet []pb.EventCard
+	ky := req.RoomKey
+	if req.Side == pb.PlayerSide_HOST {
+		ky = req.RoomKey + ":HtEvtCrdDk"
+	} else if req.Side == pb.PlayerSide_DUELER {
+		ky = req.RoomKey + ":DlEvtCrdDk"
+	}
+	if _, err := wkbox.GetPara(&ky, &tmpSet); err != nil {
 		log.Fatalln(err)
 		return nil, status.Errorf(codes.NotFound, err.Error())
 	}
+	for _, v := range tmpSet {
+		for _, vk := range req.UpdateCard {
+			if vk.CardId == v.Id {
+				v.IsInvert = vk.IsInvert
+				v.Position = vk.Position
+			}
+		}
+	}
 
-	err := this.BroadCast(&req.RoomKey, &sidetmp, InstSetECMsg)
-	if err != nil {
+	if _, err := wkbox.SetPara(&ky, tmpSet); err != nil {
+		log.Println(err)
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	if err := this.BroadCast(&req.RoomKey, &sidetmp, &pb.GDBroadcastResp{
+		RoomKey:      req.RoomKey,
+		Msg:          "",
+		Command:      pb.CastCmd_GET_INSTANCE_CARD,
+		CurrentPhase: req.CurrentPhase,
+		InstanceSet:  req.UpdateCard,
+	}); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	return nil, status.Error(codes.Unimplemented, "EVENT_PHASE_CONFIRM")
-}
-func (this *ULZGameDuelServiceBackend) InstGetEventCard(ctx context.Context, req *pb.GDGetInfoReq) (*pb.GDInstanceDT, error) {
-	return nil, status.Error(codes.Unimplemented, "EVENT_PHASE_RESULT")
-
+	return &pb.Empty{}, nil
 }
