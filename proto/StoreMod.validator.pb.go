@@ -16,6 +16,34 @@ var _ = fmt.Errorf
 var _ = math.Inf
 
 func (this *MovePhaseSnapMod) Validate() error {
+	for _, item := range this.HostCard {
+		if item != nil {
+			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
+				return github_com_mwitkow_go_proto_validators.FieldError("HostCard", err)
+			}
+		}
+	}
+	for _, item := range this.DuelCard {
+		if item != nil {
+			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
+				return github_com_mwitkow_go_proto_validators.FieldError("DuelCard", err)
+			}
+		}
+	}
+	for _, item := range this.HostTrigSkl {
+		if item != nil {
+			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
+				return github_com_mwitkow_go_proto_validators.FieldError("HostTrigSkl", err)
+			}
+		}
+	}
+	for _, item := range this.DuelTrigSkl {
+		if item != nil {
+			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
+				return github_com_mwitkow_go_proto_validators.FieldError("DuelTrigSkl", err)
+			}
+		}
+	}
 	return nil
 }
 func (this *ADPhaseSnapMod) Validate() error {

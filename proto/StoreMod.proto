@@ -23,7 +23,11 @@ message MovePhaseSnapMod {
     int32                       host_val                = 4;
     int32                       duel_val                = 5;
     MovePhaseOpt                host_opt                = 6;
-	MovePhaseOpt                duel_opt                = 7;
+    MovePhaseOpt                duel_opt                = 7;
+    repeated EventCard          host_card               = 8;
+    repeated EventCard          duel_card               = 9;
+    repeated SkillSet           host_trig_skl           = 10;
+    repeated SkillSet           duel_trig_skl           = 11;
 }
 
 // AD-Phase-SnapMod

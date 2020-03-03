@@ -102,6 +102,7 @@ message GDMoveConfirmReq {
     repeated EventCard          update_card                 = 3;
     MovePhaseOpt                move_opt                    = 4;
     int32                       point                       = 5;
+    repeated SkillSet           trigger_skl                 = 6;
 }
 
 
