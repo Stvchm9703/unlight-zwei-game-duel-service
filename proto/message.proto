@@ -71,6 +71,8 @@ enum    CastCmd {
     GET_MOVE_PHASE_RESULT   = 2;
     GET_ATK_PHASE_RESULT    = 3;
     GET_DEF_PHASE_RESULT    = 4;
+    GET_INSTANCE_CARD       = 5;
+    GET_GAMESET_RESULT      = 6;
 }
 
 // -------------------------------------------------------------
