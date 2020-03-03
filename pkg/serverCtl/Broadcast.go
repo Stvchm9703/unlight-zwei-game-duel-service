@@ -10,7 +10,7 @@ import (
 	// "time"
 )
 
-func (this *ULZGameDuelServiceBackend) ServerBroadcast(rReq *pb.GDGetInfoReq, stream pb.RoomService_ServerBroadcastServer) error {
+func (this *ULZGameDuelServiceBackend) ServerBroadcast(rReq *pb.GDGetInfoReq, stream pb.GameDuelService_ServerBroadcastServer) error {
 	cm.PrintReqLog(nil, "server-broadcast", rReq)
 	_, err := this.AddStream(&rReq.RoomKey, &rReq.IncomeUserId, &stream)
 	if err != nil {

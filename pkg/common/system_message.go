@@ -1,5 +1,10 @@
 package common
 
+import (
+	"github.com/gogo/status"
+	"google.golang.org/grpc/codes"
+)
+
 // MsgSystShutdown : Message-System-Shutdown
 // func MsgSystShutdown(key *string) *pb.RoomMsg {
 // 	return &pb.RoomMsg{
@@ -40,3 +45,7 @@ package common
 // 		MsgType: pb.RoomMsg_SYSTEM_INFO,
 // 	}
 // }
+
+func StatusErrorNonPlayer() error {
+	return status.Error(codes.InvalidArgument, "NON_PLAYER_ACTION")
+}

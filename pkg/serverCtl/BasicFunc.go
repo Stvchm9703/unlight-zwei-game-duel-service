@@ -40,32 +40,60 @@ func (this *ULZGameDuelServiceBackend) CreateGame(ctx context.Context, req *pb.G
 	}
 	new_gameset := pb.GameDataSet{
 		// by request
-		RoomKey:      req.RoomKey,
-		HostId:       req.HostId,
-		DuelId:       req.DuelerId,
-		Nvn:          req.Nvn,
-		HostCardDeck: req.HostCardDeck,
-		DuelCardDeck: req.DuelCardDeck,
-		// by default
+		RoomKey:           req.RoomKey,
+		HostId:            req.HostId,
+		DuelId:            req.DuelerId,
+		Nvn:               req.Nvn,
+		HostCardDeck:      req.HostCardDeck,
+		DuelCardDeck:      req.DuelCardDeck,
 		GameTurn:          0,
 		HostCurrCardKey:   0,
 		DuelCurrCardKey:   0,
-		HostEventCardDeck: nil,
-		DuelEventCardDeck: nil,
+		HostEventCardDeck: genCardSet(150, 0),
+		DuelEventCardDeck: genCardSet(150, 0),
 		Range:             pb.RangeType_MIDDLE,
 		EventPhase:        pb.EventHookPhase_gameset_start,
-		HookType:          pb.EventHookType_before,
+		HookType:          pb.EventHookType_Before,
 		PhaseAb:           0,
 		CurrPhase:         0,
 		IsHostReady:       false,
 		IsDuelReady:       false,
+		EffectCounter:     nil,
 	}
 
 	// new_gameset.HostEvent
+	// return nil, status.Error(codes.Unimplemented, "CREATE_GAME")
+	// Set Para
+	if _, err := wkbox.SetPara(&req.RoomKey, new_gameset); err != nil {
+		log.Println(err)
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	return &new_gameset, nil
+}
+
+func (this *ULZGameDuelServiceBackend) GetGameData(ctx context.Context, req *pb.GDGetInfoReq) (*pb.GameDataSet, error) {
+	cm.PrintReqLog(ctx, "get-room-info", req)
+
+	start := time.Now()
+	this.mu.Lock()
+	wkbox := this.searchAliveClient()
+	defer func() {
+		this.mu.Unlock()
+		elapsed := time.Since(start)
+		log.Printf("Get-Room took %s", elapsed)
+		(wkbox).Preserve(false)
+	}()
+
+	var tmp pb.GameDataSet
+	if _, err := wkbox.GetPara(&req.RoomKey, &tmp); err != nil {
+		log.Fatalln(err)
+		return nil, status.Errorf(codes.NotFound, err.Error())
+	}
+	// return nil, status.Error(codes.Unimplemented, "CREATE_GAME")
+	return &tmp, nil
+}
+
+func (this *ULZGameDuelServiceBackend) QuitGame(context.Context, *pb.GDCreateReq) (*pb.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "CREATE_GAME")
 
 }
-
-func (this *ULZGameDuelServiceBackend) GetGameData(context.Context, *pb.GDGetInfoReq) (*pb.GameDataSet, error)
-
-func (this *ULZGameDuelServiceBackend) QuitGame(context.Context, *pb.GDCreateReq) (*pb.Empty, error)

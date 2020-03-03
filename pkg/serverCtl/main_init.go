@@ -82,7 +82,7 @@ func (this *ULZGameDuelServiceBackend) Shutdown() {
 // ----------------------------------------------------------------------------------------------------
 //
 
-func (rm *ULZGameDuelServiceBackend) GetStream(roomKey *string, userId *string) *pb.RoomService_ServerBroadcastServer {
+func (rm *ULZGameDuelServiceBackend) GetStream(roomKey *string, userId *string) *pb.GameDuelService_ServerBroadcastServer {
 	a, ok := rm.roomStream[*roomKey]
 	b, ok := a.clientConn[*userId]
 	if ok {
@@ -91,7 +91,7 @@ func (rm *ULZGameDuelServiceBackend) GetStream(roomKey *string, userId *string) 
 	return nil
 }
 
-func (rm *ULZGameDuelServiceBackend) AddStream(roomKey *string, userId *string, stream *pb.RoomService_ServerBroadcastServer) (bool, error) {
+func (rm *ULZGameDuelServiceBackend) AddStream(roomKey *string, userId *string, stream *pb.GameDuelService_ServerBroadcastServer) (bool, error) {
 	// _, ok := rm.bc_stream[user_id]
 	fmt.Println("RoomService.AddStream")
 	fmt.Println(rm.roomStream)
@@ -122,7 +122,7 @@ func (rm *ULZGameDuelServiceBackend) DelStream(roomKey *string, userId *string) 
 	return false, errors.New("StreamNotExist")
 }
 
-func (rm *ULZGameDuelServiceBackend) BroadCast(roomkey *string, from *string, message *pb.RoomMsg) error {
+func (rm *ULZGameDuelServiceBackend) BroadCast(roomkey *string, from *string, message *pb.GDBroadcastResp) error {
 	log.Println("BS!", message)
 	log.Println(rm.roomStream[*roomkey].key)
 	rmb, ok := rm.roomStream[*roomkey]
@@ -143,9 +143,9 @@ func (rm *ULZGameDuelServiceBackend) BroadCast(roomkey *string, from *string, me
 
 func (rm *RoomStreamBox) ClearAll() {
 	log.Println("ClearAll Proc")
-	for _, vc := range rm.clientConn {
-		// (*vc).Send(cm.MsgSystShutdown(&rm.key))
-	}
+	// for _, vc := range rm.clientConn {
+	// 	// (*vc).Send(cm.MsgSystShutdown(&rm.key))
+	// }
 	for k := range rm.clientConn {
 		*(rm.clientConn[k]) = nil
 		delete(rm.clientConn, k)
