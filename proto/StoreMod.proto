@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+import  "Data.proto";
+import  "EventHookPhase.proto";
+
+
+package ULZProto;
+option  go_package              = "proto";
+option  csharp_namespace        = "ULZAsset.ProtoMod";
+
+
+
+// ANCHOR: mod-struct for game-service
+// SECTION: StoreMod.proto
+// -------------------------------------------------------------
+
+// Move-Phase-SnapMod
+message MovePhaseSnapMod {
+    //  flaging 
+    int32                       turns                   = 1;
+    bool                        is_host_ready           = 2;
+    bool                        is_duel_ready           = 3;
+    int32                       host_val                = 4;
+    int32                       duel_val                = 5;
+    MovePhaseOpt                host_opt                = 6;
+	MovePhaseOpt                duel_opt                = 7;
+}
+
+// AD-Phase-SnapMod
+message ADPhaseSnapMod {
+    int32                       turns                   = 1;
+    PlayerSide                  first_attack            = 2;
+    PlayerSide                  curr_phase              = 3;
+    EventHookPhase              event_phase             = 4;
+    int32                       host_val                = 5;
+    int32                       duel_val                = 6;
+    repeated EventCard          host_card               = 7;
+    repeated EventCard          duel_card               = 8;
+    repeated SkillSet           host_trig_skl           = 9;
+    repeated SkillSet           duel_trig_skl           = 10;
+}
+
+// Effect-Status-SnapMod

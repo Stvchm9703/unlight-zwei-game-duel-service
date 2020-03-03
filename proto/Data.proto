@@ -4,7 +4,7 @@ syntax="proto3";
 import  "EventHookPhase.proto";
 
 package ULZProto;
-option go_package = "proto";
+option  go_package = "proto";
 option  csharp_namespace         = "ULZAsset.ProtoMod";
 
 
@@ -36,6 +36,13 @@ enum    RangeType {
     SHORT                       = 0;
     MIDDLE                      = 1;
     LONG                        = 2;
+}
+
+enum    MovePhaseOpt        {
+    FORWARD                 = 0;
+    BACKWARD                = 1;
+    STAY                    = 2;
+    CHANGE                  = 3;
 }
 // -------------------------------------------------------------
 
@@ -74,15 +81,13 @@ message GameDataSet {
 
 
 
-    PlayerSide                  phase_ab                = 13;
+    PlayerSide                  first_attack            = 13;
     PlayerSide                  curr_phase              = 14;
     //  event_phase, the event hook phase 
     EventHookPhase              event_phase             = 15;
     //  hook_type, the event hook type
     EventHookType               hook_type               = 16;
 
-    
-    
 
     //  flaging 
     bool                        is_host_ready           = 17;
@@ -91,6 +96,8 @@ message GameDataSet {
     //  Effect-result
     repeated EffectResult      effect_counter          = 19;
 }
+
+
 
 // CharCardSet 
 // 
@@ -142,7 +149,7 @@ message SkillSet {
     int32                       feat_no                 = 2;
     int32                       pow                     = 3;
     string                      cond_string             = 4;
-    repeated SkillCardCond     cond_card               = 5;
+    repeated SkillCardCond      cond_card               = 5;
     RangeType                   cond_range              = 6;
 }
  enum    SignEq {

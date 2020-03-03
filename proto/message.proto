@@ -104,12 +104,7 @@ message GDMoveConfirmReq {
     int32                       point                       = 5;
 }
 
-enum    MovePhaseOpt        {
-    FORWARD                 = 0;
-    BACKWARD                = 1;
-    STAY                    = 2;
-    CHANGE                  = 3;
-}
+
 message GDMoveConfirmResp {
     string                      room_key                    = 1;
     RangeType                   result_range                = 2;
@@ -126,21 +121,10 @@ message GDADConfirmReq {
     string                      room_key                    = 1;
     PlayerSide                  side                        = 2;
     EventHookPhase              current_phase               = 3;
-
-    
-    // point :  the feat-power-point
-    int32                       pow_point                   = 4;
-    // skill-id : skill trigger
-    //      0 / null as no skill trigger
-    int32                       skill_id                    = 5;
-    // feat_id : binding function 
-    //      0 / null as no skill trigger
-    int32                       feat_id                     = 6;
-
-
+    repeated SkillSet           trigger_skl                 = 4;
     // update-card : target event-card to used
     // !NOTE: suppose the card data is stored during card-move 
-    repeated EventCard          update_card                 = 7;
+    repeated EventCard          update_card                 = 5;
      
 }
 
