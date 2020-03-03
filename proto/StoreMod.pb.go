@@ -99,14 +99,14 @@ func (m *MovePhaseSnapMod) GetHostOpt() MovePhaseOpt {
 	if m != nil {
 		return m.HostOpt
 	}
-	return MovePhaseOpt_FORWARD
+	return MovePhaseOpt_NO_MOVE
 }
 
 func (m *MovePhaseSnapMod) GetDuelOpt() MovePhaseOpt {
 	if m != nil {
 		return m.DuelOpt
 	}
-	return MovePhaseOpt_FORWARD
+	return MovePhaseOpt_NO_MOVE
 }
 
 // AD-Phase-SnapMod

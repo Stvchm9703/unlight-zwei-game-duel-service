@@ -505,7 +505,7 @@ func (m *GDMoveConfirmReq) GetMoveOpt() MovePhaseOpt {
 	if m != nil {
 		return m.MoveOpt
 	}
-	return MovePhaseOpt_FORWARD
+	return MovePhaseOpt_NO_MOVE
 }
 
 func (m *GDMoveConfirmReq) GetPoint() int32 {
