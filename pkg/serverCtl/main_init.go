@@ -27,8 +27,6 @@ type ULZGameDuelServiceBackend struct {
 	roomStream map[string](*RoomStreamBox)
 }
 type RoomStreamBox struct {
-	key        string
-	password   string
 	clientConn map[string]*pb.GameDuelService_ServerBroadcastServer
 }
 
@@ -124,7 +122,6 @@ func (rm *ULZGameDuelServiceBackend) DelStream(roomKey *string, userId *string) 
 
 func (rm *ULZGameDuelServiceBackend) BroadCast(roomkey *string, from *string, message *pb.GDBroadcastResp) error {
 	log.Println("BS!", message)
-	log.Println(rm.roomStream[*roomkey].key)
 	rmb, ok := rm.roomStream[*roomkey]
 	if !ok {
 		log.Println("room not exist")

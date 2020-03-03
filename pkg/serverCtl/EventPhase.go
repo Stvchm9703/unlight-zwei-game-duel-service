@@ -15,5 +15,4 @@ func (this *ULZGameDuelServiceBackend) EventPhaseConfirm(context.Context, *pb.GD
 }
 func (this *ULZGameDuelServiceBackend) EventPhaseResult(context.Context, *pb.GDGetInfoReq) (*pb.GDPhaseConfirmResp, error) {
 	return nil, status.Error(codes.Unimplemented, "EVENT_PHASE_RESULT")
-
 }

@@ -62,7 +62,7 @@ message GDBroadcastResp {
     EventHookPhase              current_phase               = 4;
     EventHookType               phase_hook                  = 5;
     PlayerSide                  phase_ab                    = 6;
-    
+    repeated ECShortHand        instance_set                = 7;
 }
 
 enum    CastCmd {

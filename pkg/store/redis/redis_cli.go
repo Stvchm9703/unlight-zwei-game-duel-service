@@ -302,6 +302,22 @@ func (rc *RdsCliBox) SetPara(key *string, value interface{}) (bool, error) {
 
 	return true, nil
 }
+func (rc *RdsCliBox) SetParaWTO(key *string, value interface{}, timeout int) (bool, error) {
+	rc.lock()
+	defer rc.unlock()
+	keystr := rc.CoreKey + "/_" + rc.Key + "." + *key
+	jsonFormat, err := json.Marshal(value)
+	if err != nil {
+		return false, err
+	}
+	strr := strconv.Quote(string(jsonFormat))
+
+	if _, err := rc.conn.Set(keystr, strr, time.Duration(int64(timeout))).Result(); err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
 
 // RemovePara : remove the k-v
 func (rc *RdsCliBox) RemovePara(key *string) (bool, error) {
