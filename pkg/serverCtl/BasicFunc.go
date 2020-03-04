@@ -81,14 +81,26 @@ func (this *ULZGameDuelServiceBackend) CreateGame(ctx context.Context, req *pb.G
 	}
 	// move-instance
 	tmpKey = req.RoomKey + ":MvPhMod"
-	move_instance := pb.MovePhaseSnapMod{}
+	move_instance := pb.MovePhaseSnapMod{
+		Turns:       0,
+		IsDuelReady: false,
+		IsHostReady: false,
+	}
 	if _, err := wkbox.SetPara(&tmpKey, move_instance); err != nil {
 		log.Println(err)
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-
 	// ad-phase-instance
-
+	tmpKey = req.RoomKey + ":ADPhMod"
+	ad_instance := pb.ADPhaseSnapMod{
+		Turns:       0,
+		FirstAttack: 0,
+		EventPhase:  pb.EventHookPhase_start_turn_phase,
+	}
+	if _, err := wkbox.SetPara(&tmpKey, ad_instance); err != nil {
+		log.Println(err)
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
 	return &new_gameset, nil
 }
 

@@ -50,14 +50,37 @@ func (this *ULZGameDuelServiceBackend) DrawPhaseConfirm(ctx context.Context, req
 	} else if req.Side == pb.PlayerSide_DUELER {
 		returner.IsDuelReady = true
 	}
+	// broadcast ok ?
+	go this.BroadCast(&req.RoomKey, &req.IncomeUserId, &pb.GDBroadcastResp{
+		RoomKey:      req.RoomKey,
+		Msg:          req.Side.String() + "_READY",
+		Command:      pb.CastCmd_GET_DRAW_PHASE_RESULT,
+		CurrentPhase: pb.EventHookPhase_refill_action_card_phase,
+		PhaseHook:    pb.EventHookType_Proxy,
+		Side:         req.Side,
+		InstanceSet:  nil,
+	})
 
 	if returner.IsHostReady && returner.IsDuelReady {
 		// broadcast for ready next phase
-		returner.IsDuelReady = false
-		returner.IsDuelReady = false
-		returner.EventPhase = pb.EventHookPhase_move_card_drop_phase
-		returner.HookType = pb.EventHookType_Before
+		returner.EventPhase = pb.EventHookPhase_refill_action_card_phase
+		returner.HookType = pb.EventHookType_After
 		// check event hook
+		go this.BroadCast(&req.RoomKey, &req.IncomeUserId, &pb.GDBroadcastResp{
+			RoomKey:      req.RoomKey,
+			Msg:          "Both_Ready",
+			Command:      pb.CastCmd_GET_DRAW_PHASE_RESULT,
+			CurrentPhase: pb.EventHookPhase_refill_action_card_phase,
+			PhaseHook:    pb.EventHookType_After,
+			Side:         nil,
+			InstanceSet:  nil,
+		})
+
+	} else {
+		// snap store
+		if _, err := wkbox.SetPara(&req.RoomKey, returner); err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
 	}
 	return &pb.Empty{}, nil
 	// return nil, status.Error(codes.Unimplemented, "DRAW_PHASE_CONFIRM")

@@ -13,6 +13,7 @@ import (
 func (this *ULZGameDuelServiceBackend) ADPhaseConfirm(context.Context, *pb.GDADConfirmReq) (*pb.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "AD_PHASE_CONFIRM")
 }
+
 func (this *ULZGameDuelServiceBackend) ADPhaseResult(context.Context, *pb.GDGetInfoReq) (*pb.GDADResultResp, error) {
 	return nil, status.Error(codes.Unimplemented, "AD_PHASE_RESULT")
 }
