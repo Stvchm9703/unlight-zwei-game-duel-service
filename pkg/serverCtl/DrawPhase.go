@@ -60,7 +60,10 @@ func (this *ULZGameDuelServiceBackend) DrawPhaseConfirm(ctx context.Context, req
 		Side:         req.Side,
 		InstanceSet:  nil,
 	})
-
+	if _, err := wkbox.SetPara(&req.RoomKey, returner); err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	log.Println("ACK-msg")
 	if returner.IsHostReady && returner.IsDuelReady {
 		// broadcast for ready next phase
 		returner.EventPhase = pb.EventHookPhase_refill_action_card_phase
@@ -72,15 +75,10 @@ func (this *ULZGameDuelServiceBackend) DrawPhaseConfirm(ctx context.Context, req
 			Command:      pb.CastCmd_GET_DRAW_PHASE_RESULT,
 			CurrentPhase: pb.EventHookPhase_refill_action_card_phase,
 			PhaseHook:    pb.EventHookType_After,
-			Side:         nil,
+			Side:         0,
 			InstanceSet:  nil,
 		})
-
-	} else {
-		// snap store
-		if _, err := wkbox.SetPara(&req.RoomKey, returner); err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
-		}
+		// go this.PhaseNext()
 	}
 	return &pb.Empty{}, nil
 	// return nil, status.Error(codes.Unimplemented, "DRAW_PHASE_CONFIRM")

@@ -34,14 +34,19 @@ message MovePhaseSnapMod {
 message ADPhaseSnapMod {
     int32                       turns                   = 1;
     PlayerSide                  first_attack            = 2;
-    PlayerSide                  curr_phase              = 3;
+    PlayerSide                  curr_attacker           = 3;
     EventHookPhase              event_phase             = 4;
-    int32                       host_val                = 5;
-    int32                       duel_val                = 6;
-    repeated EventCard          host_card               = 7;
-    repeated EventCard          duel_card               = 8;
-    repeated SkillSet           host_trig_skl           = 9;
-    repeated SkillSet           duel_trig_skl           = 10;
+    int32                       attack_val              = 5;
+    int32                       defence_val             = 6;
+    repeated EventCard          attack_card             = 7;
+    repeated EventCard          defence_card            = 8;
+    repeated SkillSet           attack_trig_skl         = 9;
+    repeated SkillSet           defence_trig_skl        = 10;
+    bool                        is_processed            = 11;
 }
 
-// Effect-Status-SnapMod
+// // Effect-Status-SnapMod
+// message EffectNodeSnapMod {
+//     int32                       turns                   = 1;
+//     repeated Effect
+// }

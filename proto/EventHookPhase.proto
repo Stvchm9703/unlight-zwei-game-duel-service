@@ -52,8 +52,8 @@ enum        EventHookPhase {
 enum        EventHookType {
   Instant                                       = 0;
   Before                                        = 1;
-  After                                         = 2;
-  Proxy                                         = 3;
+  Proxy                                         = 2;
+  After                                         = 3;
 }
 // !SECTION: EventHookPhase.proto
 // ----------------------------------------------------

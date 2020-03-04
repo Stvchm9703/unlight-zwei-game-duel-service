@@ -15,7 +15,7 @@ import (
 )
 
 func (this *ULZGameDuelServiceBackend) MovePhaseConfirm(ctx context.Context, req *pb.GDMoveConfirmReq) (*pb.Empty, error) {
-	cm.PrintReqLog(ctx, "Draw-Phase-Confirm", req)
+	cm.PrintReqLog(ctx, "Move-Phase-Confirm", req)
 	start := time.Now()
 	this.mu.Lock()
 	wkbox := this.searchAliveClient()
@@ -23,7 +23,7 @@ func (this *ULZGameDuelServiceBackend) MovePhaseConfirm(ctx context.Context, req
 		wkbox.Preserve(false)
 		this.mu.Unlock()
 		elapsed := time.Since(start)
-		log.Printf("Draw-Phase-Confirm took %s", elapsed)
+		log.Printf("Move-Phase-Confirm took %s", elapsed)
 	}()
 
 	var returner pb.GameDataSet
@@ -104,6 +104,7 @@ func (this *ULZGameDuelServiceBackend) MovePhaseConfirm(ctx context.Context, req
 			return nil, status.Errorf(codes.Internal, err.Error())
 		}
 		// both-ready; then move-next phase
+		// go this.phase_run
 	}
 	return &pb.Empty{}, nil
 
@@ -112,13 +113,52 @@ func (this *ULZGameDuelServiceBackend) MovePhaseConfirm(ctx context.Context, req
 /**
  * after the move-next to do [determine-move-phase]
  * it will request client to send move-phase-result to grep the result
+ *
+ * 	[move-phase]
+ * 	|
+ * 	{ both side ready }
+ * 		| => ( go exec phase-runner )
+ * 				| => [move_card_drop_phase:after] {
+ * 				|		1. exec triggered skill
+ * 				|			| -> get effect-func
+ * 				|			| -> get instance value change
+ * 				|		2. order effect-func in [ determine-move-phase:before,after ]
+ * 				|		3. run the after-ef-result-node by order
+ * 				|		4. return the list of node
+ * 				|	}
+ * 				|
+ * 				|	phase-runner get af-ef-result-node list from exec-service:
+ * 				|		-> send effent-phase-request
+ * 				|
+ * 				|	[determine-move-phase] is going end:{
+ * 				|		1. store instance-result
+ * 				|	 	2. send move-phase-result
+ * 				|	}
+ * 				|
+ *  			| 	if the gameSet have dead result
+ * 				|		if nvn == 1 :
+ * 				|			game-end-phase
+ * 				|		if nvn == 3 :
+ * 				|			change-char-phase
  */
-func (this *ULZGameDuelServiceBackend) MovePhaseResult(context.Context, *pb.GDGetInfoReq) (*pb.GDMoveConfirmResp, error) {
-	var snapMovekey = req.RoomKey + ":MvPhMod"
-	var snapMove pb.MovePhaseSnapMod
+
+func (this *ULZGameDuelServiceBackend) MovePhaseResult(ctx context.Context, req *pb.GDGetInfoReq) (*pb.GDMoveConfirmResp, error) {
+	cm.PrintReqLog(ctx, "Draw-Phase-Confirm", req)
+	start := time.Now()
+	this.mu.Lock()
+	wkbox := this.searchAliveClient()
+	defer func() {
+		wkbox.Preserve(false)
+		this.mu.Unlock()
+		elapsed := time.Since(start)
+		log.Printf("Draw-Phase-Confirm took %s", elapsed)
+	}()
+
+	var snapMovekey = req.RoomKey + ":MvPhModResult"
+	var snapMove pb.GDMoveConfirmResp
 	if _, err := (wkbox).GetPara(&snapMovekey, &snapMove); err != nil {
 		log.Println(err)
 		return nil, status.Errorf(codes.NotFound, err.Error())
 	}
-	return nil, status.Error(codes.Unimplemented, "MOVE_PHASE_RESULT")
+	return &snapMove, nil
 }
