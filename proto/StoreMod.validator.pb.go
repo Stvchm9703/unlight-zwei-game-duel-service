@@ -47,31 +47,31 @@ func (this *MovePhaseSnapMod) Validate() error {
 	return nil
 }
 func (this *ADPhaseSnapMod) Validate() error {
-	for _, item := range this.HostCard {
+	for _, item := range this.AttackCard {
 		if item != nil {
 			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
-				return github_com_mwitkow_go_proto_validators.FieldError("HostCard", err)
+				return github_com_mwitkow_go_proto_validators.FieldError("AttackCard", err)
 			}
 		}
 	}
-	for _, item := range this.DuelCard {
+	for _, item := range this.DefenceCard {
 		if item != nil {
 			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
-				return github_com_mwitkow_go_proto_validators.FieldError("DuelCard", err)
+				return github_com_mwitkow_go_proto_validators.FieldError("DefenceCard", err)
 			}
 		}
 	}
-	for _, item := range this.HostTrigSkl {
+	for _, item := range this.AttackTrigSkl {
 		if item != nil {
 			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
-				return github_com_mwitkow_go_proto_validators.FieldError("HostTrigSkl", err)
+				return github_com_mwitkow_go_proto_validators.FieldError("AttackTrigSkl", err)
 			}
 		}
 	}
-	for _, item := range this.DuelTrigSkl {
+	for _, item := range this.DefenceTrigSkl {
 		if item != nil {
 			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
-				return github_com_mwitkow_go_proto_validators.FieldError("DuelTrigSkl", err)
+				return github_com_mwitkow_go_proto_validators.FieldError("DefenceTrigSkl", err)
 			}
 		}
 	}
