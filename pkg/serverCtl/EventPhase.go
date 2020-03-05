@@ -137,11 +137,17 @@ func (this *ULZGameDuelServiceBackend) phaseTrigEf(gameDS *pb.GameDataSet, shift
 	copier.Copy(&gameDSTmp, gameDS)
 
 	for _, v := range tarEf {
-		var tmpHp, tmpAp, tmpDp int32
 		if v.TarSide == pb.PlayerSide_HOST {
-			tmpHp = gameDSTmp.HostCardDeck[v.TarCard].HpInst
+			gameDSTmp.HostCardDeck[v.TarCard].HpInst += v.Hp
+			gameDSTmp.HostCardDeck[v.TarCard].ApInst += v.Ap
+			gameDSTmp.HostCardDeck[v.TarCard].DpInst += v.Dp
+		} else {
+			gameDSTmp.DuelCardDeck[v.TarCard].HpInst += v.Hp
+			gameDSTmp.DuelCardDeck[v.TarCard].ApInst += v.Ap
+			gameDSTmp.DuelCardDeck[v.TarCard].DpInst += v.Dp
 		}
 	}
+
 	// for k,v:= {
 
 	// }

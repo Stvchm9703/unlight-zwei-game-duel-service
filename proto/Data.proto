@@ -191,7 +191,7 @@ message EffectResult {
     int32                       sub_count               = 5;
     
     // effect
-    SignEq                      ef_option               = 6;
+    EffectOption                ef_option               = 6;
     int32                       hp                      = 7;
     int32                       ap                      = 8;
     int32                       dp                      = 9;
@@ -208,5 +208,13 @@ message EffectResult {
     int32                       skill_id                = 18;
 }
 
+enum    EffectOption{
+    // Status_Addition :
+    //    like +3-Move, by cd to change the +/- value
+    Status_Addition             = 1;
+    //  Instance_Change :
+    //    like pos
+    Instance_Change             = 2;
+}
 
 // !SECTION: Data.proto
