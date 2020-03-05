@@ -90,9 +90,6 @@ func (this *SkillCardCond) Validate() error {
 func (this *StatusSet) Validate() error {
 	return nil
 }
-func (this *Status_Effect) Validate() error {
-	return nil
-}
 func (this *EffectResult) Validate() error {
 	return nil
 }
