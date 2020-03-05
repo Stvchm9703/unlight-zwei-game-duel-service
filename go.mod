@@ -14,7 +14,7 @@ require (
 	github.com/google/go-cmp v0.4.0 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.2.0
 	github.com/grpc-ecosystem/grpc-gateway v1.12.1
-	github.com/jinzhu/copier v0.0.0-20190924061706-b57f9002281a // indirect
+	github.com/jinzhu/copier v0.0.0-20190924061706-b57f9002281a
 	github.com/jinzhu/gorm v1.9.12
 	github.com/lib/pq v1.3.0 // indirect
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible // indirect

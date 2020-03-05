@@ -213,7 +213,7 @@ enum    EffectOption{
     //    like +3-Move, by cd to change the +/- value
     Status_Addition             = 1;
     //  Instance_Change :
-    //    like pos
+    //    like posion, it will -1 to inst_value in CC
     Instance_Change             = 2;
 }
 
