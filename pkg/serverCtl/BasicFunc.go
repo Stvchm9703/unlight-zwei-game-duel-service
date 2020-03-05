@@ -101,6 +101,18 @@ func (this *ULZGameDuelServiceBackend) CreateGame(ctx context.Context, req *pb.G
 		log.Println(err)
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
+
+	//
+	tmpKey = req.RoomKey + ":EfMod"
+	ad_instance := pb.ADPhaseSnapMod{
+		Turns:       0,
+		FirstAttack: 0,
+		EventPhase:  pb.EventHookPhase_start_turn_phase,
+	}
+	if _, err := wkbox.SetPara(&tmpKey, ad_instance); err != nil {
+		log.Println(err)
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
 	return &new_gameset, nil
 }
 
