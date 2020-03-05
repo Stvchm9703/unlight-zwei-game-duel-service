@@ -5,6 +5,7 @@ import (
 	pb "ULZGameDuelService/proto"
 	"context"
 	"log"
+	"sync"
 	"time"
 
 	"github.com/gogo/status"
@@ -66,53 +67,81 @@ func (this *ULZGameDuelServiceBackend) CreateGame(ctx context.Context, req *pb.G
 		log.Println(err)
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
+	wg := sync.WaitGroup{}
+	errCh := make(chan error)
 	// event-card-control
 	new_gameset.HostEventCardDeck = genCardSet(150, 0)
 	new_gameset.DuelEventCardDeck = genCardSet(150, 0)
-	tmpKey := req.RoomKey + ":HtEvtCrdDk"
-	if _, err := wkbox.SetPara(&tmpKey, new_gameset.HostCardDeck); err != nil {
-		log.Println(err)
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-	tmpKey = req.RoomKey + ":DlEvtCrdDk"
-	if _, err := wkbox.SetPara(&tmpKey, new_gameset.DuelCardDeck); err != nil {
-		log.Println(err)
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
+	wg.Add(1)
+	go func() {
+		tmpKey := req.RoomKey + ":HtEvtCrdDk"
+		if _, err := wkbox.SetPara(&tmpKey, new_gameset.HostCardDeck); err != nil {
+			log.Println(err)
+			errCh <- status.Errorf(codes.Internal, err.Error())
+		}
+		wg.Done()
+	}()
+	wg.Add(1)
+	go func() {
+		tmpKey1 := req.RoomKey + ":DlEvtCrdDk"
+		if _, err := wkbox.SetPara(&tmpKey1, new_gameset.DuelCardDeck); err != nil {
+			panic(err)
+			errCh <- status.Errorf(codes.Internal, err.Error())
+		}
+		wg.Done()
+	}()
+
 	// move-instance
-	tmpKey = req.RoomKey + ":MvPhMod"
-	move_instance := pb.MovePhaseSnapMod{
-		Turns:       0,
-		IsDuelReady: false,
-		IsHostReady: false,
-	}
-	if _, err := wkbox.SetPara(&tmpKey, move_instance); err != nil {
-		log.Println(err)
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
+	wg.Add(1)
+	go func() {
+		tmpKey2 := req.RoomKey + ":MvPhMod"
+		move_instance := pb.MovePhaseSnapMod{
+			Turns:       0,
+			IsDuelReady: false,
+			IsHostReady: false,
+		}
+		if _, err := wkbox.SetPara(&tmpKey2, move_instance); err != nil {
+			log.Println(err)
+			errCh <- status.Errorf(codes.Internal, err.Error())
+		}
+		wg.Done()
+	}()
 	// ad-phase-instance
-	tmpKey = req.RoomKey + ":ADPhMod"
-	ad_instance := pb.ADPhaseSnapMod{
-		Turns:       0,
-		FirstAttack: 0,
-		EventPhase:  pb.EventHookPhase_start_turn_phase,
-	}
-	if _, err := wkbox.SetPara(&tmpKey, ad_instance); err != nil {
-		log.Println(err)
-		return nil, status.Errorf(codes.Internal, err.Error())
+	wg.Add(1)
+	go func() {
+		tmpKey3 := req.RoomKey + ":ADPhMod"
+		ad_instance := pb.ADPhaseSnapMod{
+			Turns:       0,
+			FirstAttack: 0,
+			EventPhase:  pb.EventHookPhase_start_turn_phase,
+		}
+		if _, err := wkbox.SetPara(&tmpKey3, ad_instance); err != nil {
+			log.Println(err)
+			errCh <- status.Errorf(codes.Internal, err.Error())
+		}
+		wg.Done()
+	}()
+
+	//EffectNodeMod
+	wg.Add(1)
+	go func() {
+		tmpKey4 := req.RoomKey + ":EfMod"
+		ef_instance := pb.EffectNodeSnapMod{
+			Turns:     0,
+			PendingEf: nil,
+		}
+		if _, err := wkbox.SetPara(&tmpKey4, ef_instance); err != nil {
+			log.Println(err)
+			errCh <- status.Errorf(codes.Internal, err.Error())
+			// return nil, status.Errorf(codes.Internal, err.Error())
+		}
+		wg.Done()
+	}()
+	wg.Wait()
+	if errRes := <-errCh; errRes != nil {
+		return nil, errRes
 	}
 
-	//
-	tmpKey = req.RoomKey + ":EfMod"
-	ad_instance := pb.ADPhaseSnapMod{
-		Turns:       0,
-		FirstAttack: 0,
-		EventPhase:  pb.EventHookPhase_start_turn_phase,
-	}
-	if _, err := wkbox.SetPara(&tmpKey, ad_instance); err != nil {
-		log.Println(err)
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
 	return &new_gameset, nil
 }
 
@@ -130,10 +159,29 @@ func (this *ULZGameDuelServiceBackend) GetGameData(ctx context.Context, req *pb.
 	}()
 
 	var tmp pb.GameDataSet
-	if _, err := wkbox.GetPara(&req.RoomKey, &tmp); err != nil {
-		log.Fatalln(err)
-		return nil, status.Errorf(codes.NotFound, err.Error())
+	var eflist pb.EffectNodeSnapMod
+	wg := sync.WaitGroup{}
+	errCh := make(chan error)
+	wg.Add(2)
+	go func() {
+		if _, err := wkbox.GetPara(&req.RoomKey, &tmp); err != nil {
+			log.Fatalln(err)
+			errCh <- status.Errorf(codes.Internal, err.Error())
+		}
+		wg.Done()
+	}()
+	go func() {
+		tmp := req.RoomKey + ":EfMod"
+		if _, err := wkbox.GetPara(&tmp, &eflist); err != nil {
+			log.Fatalln(err)
+			errCh <- status.Errorf(codes.Internal, err.Error())
+		}
+		wg.Done()
+	}()
+	if errRes := <-errCh; errRes != nil {
+		return nil, errRes
 	}
+	tmp.EffectCounter = eflist.PendingEf
 	// return nil, status.Error(codes.Unimplemented, "CREATE_GAME")
 	return &tmp, nil
 }

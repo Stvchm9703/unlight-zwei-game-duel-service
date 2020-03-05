@@ -3,6 +3,8 @@ package serverCtl
 import (
 	pb "ULZGameDuelService/proto"
 	"context"
+	"log"
+	"sort"
 
 	"github.com/gogo/status"
 	"google.golang.org/grpc/codes"
@@ -93,6 +95,54 @@ func (this *ULZGameDuelServiceBackend) EventPhaseResult(context.Context, *pb.GDG
 	return nil, status.Error(codes.Unimplemented, "EVENT_PHASE_RESULT")
 }
 
-func (this *ULZGameDuelServiceBackend) eventPhaseHandle(gameDS *pb.GameDataSet, shiftPhase pb.EventHookPhase, shiftHook pb.EventHookType) {
+func (this *ULZGameDuelServiceBackend) moveNextPhase(gameDS *pb.GameDataSet, shiftPhase pb.EventHookPhase, shiftType pb.EventCardType) {
+	switch gameDS.HookType {
+	case pb.EventHookType_Before, pb.EventHookType_After:
+		this.phaseTrigEf(gameDS, shiftPhase, shiftType)
+		break
+	case pb.EventHookType_Proxy:
+		break
+	}
+	// upshift the phase
+}
 
+func (this *ULZGameDuelServiceBackend) phaseTrigEf(gameDS *pb.GameDataSet, shiftPhase pb.EventHookPhase, shiftType pb.EventCardType) {
+	var efResult pb.EffectNodeSnapMod
+	var efResList []*pb.EffectResult
+	wkbox := this.searchAliveClient()
+	searchKey := gameDS.RoomKey + ":"
+	if gameDS.EffectCounter != nil {
+		efResList = gameDS.EffectCounter
+	} else {
+		if _, err := wkbox.GetPara(&searchKey, efResult); err != nil {
+			log.Println(err)
+		}
+	}
+	if len(efResList) == 0 {
+		return
+	}
+
+	tarEf := nodeFilter(efResList, func(v *pb.EffectResult) bool {
+		return (v.EventPhase == gameDS.EventPhase) && (v.HookType == gameDS.HookType)
+	})
+	sort.Slice(tarEf, func(i, j int) bool {
+		return tarEf[i].SubCount < tarEf[i].SubCount
+	})
+
+	var hostFinEf, duelFinEf []*pb.EffectResult
+
+	// for k,v:= {
+
+	// }
+}
+
+// EffectResult sorting
+func nodeFilter(vs []*pb.EffectResult, f func(*pb.EffectResult) bool) []*pb.EffectResult {
+	vsf := make([]*pb.EffectResult, 0)
+	for _, v := range vs {
+		if f(v) {
+			vsf = append(vsf, v)
+		}
+	}
+	return vsf
 }

@@ -5,8 +5,9 @@ package proto
 
 import (
 	fmt "fmt"
-	proto "github.com/golang/protobuf/proto"
 	math "math"
+
+	proto "github.com/golang/protobuf/proto"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -40,11 +41,12 @@ const (
 	EventHookPhase_chara_change_phase           EventHookPhase = 60
 	EventHookPhase_determine_chara_change_phase EventHookPhase = 70
 	// ---- Atk/Def Phase
-	EventHookPhase_attack_card_drop_phase            EventHookPhase = 80
-	EventHookPhase_defence_card_drop_phase           EventHookPhase = 90
-	EventHookPhase_determine_battle_point_phase      EventHookPhase = 100
-	EventHookPhase_battle_result_phase               EventHookPhase = 110
-	EventHookPhase_damage_phase                      EventHookPhase = 120
+	EventHookPhase_attack_card_drop_phase       EventHookPhase = 80
+	EventHookPhase_defence_card_drop_phase      EventHookPhase = 90
+	EventHookPhase_determine_battle_point_phase EventHookPhase = 100
+	EventHookPhase_battle_result_phase          EventHookPhase = 110
+	EventHookPhase_damage_phase                 EventHookPhase = 120
+	// ----- any raise dead
 	EventHookPhase_dead_chara_change_phase           EventHookPhase = 125
 	EventHookPhase_determine_dead_chara_change_phase EventHookPhase = 130
 	EventHookPhase_change_initiative_phase           EventHookPhase = 140

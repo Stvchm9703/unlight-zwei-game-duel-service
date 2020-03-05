@@ -5,6 +5,7 @@ import (
 	pb "ULZGameDuelService/proto"
 	"context"
 	"log"
+	"sync"
 	"time"
 
 	"github.com/gogo/status"
@@ -31,7 +32,17 @@ func (this *ULZGameDuelServiceBackend) InstSetEventCard(ctx context.Context, req
 	}()
 	sidetmp := req.Side.String()
 	instKey := req.RoomKey + "_instMsg@" + req.Side.String()
-	wkbox.SetParaWTO(&instKey, req, InstMsgStoreTime)
+	go wkbox.SetParaWTO(&instKey, req, InstMsgStoreTime)
+
+	// broadcast have no ddp on redis execution
+	// go first
+	go this.BroadCast(&req.RoomKey, &sidetmp, &pb.GDBroadcastResp{
+		RoomKey:      req.RoomKey,
+		Msg:          "",
+		Command:      pb.CastCmd_GET_INSTANCE_CARD,
+		CurrentPhase: req.CurrentPhase,
+		InstanceSet:  req.UpdateCard,
+	})
 
 	var tmpSet []pb.EventCard
 	ky := req.RoomKey
@@ -44,13 +55,20 @@ func (this *ULZGameDuelServiceBackend) InstSetEventCard(ctx context.Context, req
 		log.Fatalln(err)
 		return nil, status.Errorf(codes.NotFound, err.Error())
 	}
+	wg := sync.WaitGroup{}
+
 	for _, v := range tmpSet {
-		for _, vk := range req.UpdateCard {
-			if vk.CardId == v.Id {
-				v.IsInvert = vk.IsInvert
-				v.Position = vk.Position
+		wg.Add(1)
+		go func() {
+			for _, vk := range req.UpdateCard {
+				if vk.CardId == v.Id {
+					v.IsInvert = vk.IsInvert
+					v.Position = vk.Position
+					break
+				}
 			}
-		}
+			wg.Done()
+		}()
 	}
 
 	if _, err := wkbox.SetPara(&ky, tmpSet); err != nil {
@@ -58,14 +76,5 @@ func (this *ULZGameDuelServiceBackend) InstSetEventCard(ctx context.Context, req
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	if err := this.BroadCast(&req.RoomKey, &sidetmp, &pb.GDBroadcastResp{
-		RoomKey:      req.RoomKey,
-		Msg:          "",
-		Command:      pb.CastCmd_GET_INSTANCE_CARD,
-		CurrentPhase: req.CurrentPhase,
-		InstanceSet:  req.UpdateCard,
-	}); err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
 	return &pb.Empty{}, nil
 }

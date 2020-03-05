@@ -192,20 +192,21 @@ message EffectResult {
     int32                       sub_count               = 5;
     
     // effect
-    int32                       hp                      = 6;
-    int32                       ap                      = 7;
-    int32                       dp                      = 8;
-    bool                        disable_move            = 9;
-    bool                        disable_atk             = 10;
-    bool                        disable_def             = 11;
-    bool                        disable_draw            = 12;
-    bool                        disable_change          = 13;
-    string                      binding_func            = 14;
+    SigEq                       ef_option               = 6;
+    int32                       hp                      = 7;
+    int32                       ap                      = 8;
+    int32                       dp                      = 9;
+    bool                        disable_move            = 10;
+    bool                        disable_atk             = 11;
+    bool                        disable_def             = 12;
+    bool                        disable_draw            = 13;
+    bool                        disable_change          = 14;
+    string                      binding_func            = 15;
     
     // 
-    int32                       remain_cd               = 15;
-    string                      assign_from             = 16;
-    int32                       skill_id                = 17;
+    int32                       remain_cd               = 16;
+    string                      assign_from             = 17;
+    int32                       skill_id                = 18;
 }
 
 

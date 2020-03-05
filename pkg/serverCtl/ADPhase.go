@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"sync"
 	"time"
 
 	"github.com/gogo/status"
@@ -73,17 +74,30 @@ func (this *ULZGameDuelServiceBackend) ADPhaseConfirm(ctx context.Context, req *
 		log.Printf("AtkDef-Phase-Confirm took %s", elapsed)
 	}()
 
+	// get data in routine
+	wg := sync.WaitGroup{}
+	wg.Add(2)
+	errCh := make(chan error)
 	var returner pb.GameDataSet
-	if _, err := (wkbox).GetPara(&req.RoomKey, &returner); err != nil {
-		log.Println(err)
-		return nil, status.Errorf(codes.NotFound, err.Error())
-	}
-
-	var snapModkey = req.RoomKey + ":ADPhMod"
+	go func() {
+		if _, err := (wkbox).GetPara(&req.RoomKey, &returner); err != nil {
+			log.Println(err)
+			errCh <- status.Errorf(codes.NotFound, err.Error())
+		}
+		wg.Done()
+	}()
 	var snapMod pb.ADPhaseSnapMod
-	if _, err := (wkbox).GetPara(&snapModkey, &snapMod); err != nil {
-		log.Println(err)
-		// return nil, status.Errorf(codes.NotFound, err.Error())
+	var snapModkey = req.RoomKey + ":ADPhMod"
+	go func() {
+		if _, err := (wkbox).GetPara(&snapModkey, &snapMod); err != nil {
+			log.Println(err)
+			errCh <- status.Errorf(codes.NotFound, err.Error())
+		}
+		wg.Done()
+	}()
+	// check grep data error
+	if errRes := <-errCh; errRes != nil {
+		return nil, errRes
 	}
 
 	//  attack phase
@@ -160,11 +174,16 @@ func (this *ULZGameDuelServiceBackend) ADPhaseResult(ctx context.Context, req *p
 		pt = snapMod.DefenceVal
 	}
 
-	if snapMod.EventPhase == pb.EventHookPhase_attack_card_drop_phase &&
-		req.Side == snapMod.CurrAttacker {
-		// go shiftNext(&req)
-		// snapMod.
+	if req.Side == pb.PlayerSide_HOST && !req.IsWatcher {
+		snapMod.IsHostReady = true
+	} else if req.Side == pb.PlayerSide_DUELER && !req.IsWatcher {
+		snapMod.IsDuelReady = true
 	}
+
+	if snapMod.IsHostReady && snapMod.IsDuelReady {
+		// go this.moveNextPhase()
+	}
+
 	return &pb.GDADResultResp{
 		RoomKey:      req.RoomKey,
 		Side:         side,
@@ -188,6 +207,7 @@ func (this *ULZGameDuelServiceBackend) attackPhaseHandle(gameDS *pb.GameDataSet,
 	if _, err := (wkbox).SetPara(&snapModkey, snapMod); err != nil {
 		log.Println(err)
 	}
+
 	// send ok message
 	go this.BroadCast(&gameDS.RoomKey, &snapModkey, &pb.GDBroadcastResp{
 		RoomKey:      gameDS.RoomKey,
@@ -212,10 +232,10 @@ func (this *ULZGameDuelServiceBackend) defencePhaseHandle(gameDS *pb.GameDataSet
 	}
 	// send ok message
 	side := snapMod.CurrAttacker
-	if side == 0 {
-		side = 1
+	if side == pb.PlayerSide_HOST {
+		side = pb.PlayerSide_DUELER
 	} else {
-		side = 0
+		side = pb.PlayerSide_HOST
 	}
 	go this.BroadCast(&gameDS.RoomKey, &snapModkey, &pb.GDBroadcastResp{
 		RoomKey:      gameDS.RoomKey,
