@@ -7,6 +7,7 @@ import (
 	"sort"
 
 	"github.com/gogo/status"
+	"github.com/jinzhu/copier"
 	"google.golang.org/grpc/codes"
 	// Static files
 	// _ "ULZGameDuelService/statik"
@@ -128,9 +129,19 @@ func (this *ULZGameDuelServiceBackend) phaseTrigEf(gameDS *pb.GameDataSet, shift
 	sort.Slice(tarEf, func(i, j int) bool {
 		return tarEf[i].SubCount < tarEf[i].SubCount
 	})
+	FixEf := nodeFilter(tarEf, func(v *pb.EffectResult) bool {
+		return (v.EfOption == pb.SignEq_EQUAL)
+	})
 
-	var hostFinEf, duelFinEf []*pb.EffectResult
+	gameDSTmp := pb.GameDataSet{}
+	copier.Copy(&gameDSTmp, gameDS)
 
+	for _, v := range tarEf {
+		var tmpHp, tmpAp, tmpDp int32
+		if v.TarSide == pb.PlayerSide_HOST {
+			tmpHp = gameDSTmp.HostCardDeck[v.TarCard].HpInst
+		}
+	}
 	// for k,v:= {
 
 	// }

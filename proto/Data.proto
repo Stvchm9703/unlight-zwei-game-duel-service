@@ -108,9 +108,12 @@ message CharCardSet {
     int32                       hp_inst                 = 3;
     int32                       ap_inst                 = 4;
     int32                       dp_inst                 = 5;
-    int32                       level                   = 6;
-    repeated StatusSet          status_inst             = 7;
-    CharCardEquSet              equ_set                 = 8;
+    int32                       hp_orig                 = 6;
+    int32                       ap_orig                 = 7;
+    int32                       dp_orig                 = 8;
+    int32                       level                   = 9;
+    repeated StatusSet          status_inst             = 10;
+    CharCardEquSet              equ_set                 = 11;
 }
 
 message CharCardEquSet {
@@ -168,12 +171,8 @@ message StatusSet {
     int32                       id                      = 1;
     string                      status_id               = 2;
     int32                       remain_cd               = 3;
-}
-
-message Status_Effect {
-    int32                       id                      = 1;
-    int32                       feat_no                 = 2;
-    int32                       pow                     = 3;
+    int32                       feat_no                 = 4;
+    int32                       pow                     = 5;
 }
 
 
