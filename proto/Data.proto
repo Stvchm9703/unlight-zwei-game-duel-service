@@ -192,7 +192,7 @@ message EffectResult {
     int32                       sub_count               = 5;
     
     // effect
-    SigEq                       ef_option               = 6;
+    SignEq                      ef_option               = 6;
     int32                       hp                      = 7;
     int32                       ap                      = 8;
     int32                       dp                      = 9;

@@ -20,13 +20,13 @@ enum        EventHookPhase {
   // -- turn lifecycle
   start_turn_phase                              = 10;
   // ---- Draw phase (ddp)
-  refill_action_card_phase                      = 20;
+  refill_action_card_phase                       = 20;
   refill_event_card_phase                       = 25;
 
   // ---- Move phase
   move_card_drop_phase                          = 30;
   determine_move_phase                          = 40;
-  finish_move_phase                             = 50;
+  finish_move_phase                              = 50;
   chara_change_phase                            = 60;
   determine_chara_change_phase                  = 70;
 
@@ -36,10 +36,9 @@ enum        EventHookPhase {
   determine_battle_point_phase                  = 100;
   battle_result_phase                           = 110; //roll dice
   damage_phase                                  = 120;
-
+  // --- Any Raise Phase
   dead_chara_change_phase                       = 125;
   determine_dead_chara_change_phase             = 130;
-
   change_initiative_phase                       = 140;
 
 
