@@ -211,10 +211,10 @@ message EffectResult {
 enum    EffectOption{
     // Status_Addition :
     //    like +3-Move, by cd to change the +/- value
-    Status_Addition             = 1;
+    Status_Addition             = 0;
     //  Instance_Change :
     //    like posion, it will -1 to inst_value in CC
-    Instance_Change             = 2;
+    Instance_Change             = 1;
 }
 
 // !SECTION: Data.proto
