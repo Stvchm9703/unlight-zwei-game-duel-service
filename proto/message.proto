@@ -63,6 +63,7 @@ message GDBroadcastResp {
     EventHookType               phase_hook                  = 5;
     PlayerSide                  side                        = 6;
     repeated ECShortHand        instance_set                = 7;
+    repeated EffectResult       effect_trig                 = 8;
 }
 
 enum    CastCmd {

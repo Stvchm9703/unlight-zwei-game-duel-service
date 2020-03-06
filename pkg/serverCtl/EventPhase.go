@@ -107,6 +107,9 @@ func (this *ULZGameDuelServiceBackend) moveNextPhase(gameDS *pb.GameDataSet, shi
 	// upshift the phase
 }
 
+// phaseTrigEf : general phase trigger effect
+// it only handle Instance_Change / direct-dmg
+//
 func (this *ULZGameDuelServiceBackend) phaseTrigEf(gameDS *pb.GameDataSet, shiftPhase pb.EventHookPhase, shiftType pb.EventCardType) {
 	var efResult pb.EffectNodeSnapMod
 	var efResList []*pb.EffectResult
@@ -124,7 +127,8 @@ func (this *ULZGameDuelServiceBackend) phaseTrigEf(gameDS *pb.GameDataSet, shift
 	}
 
 	tarEf := nodeFilter(efResList, func(v *pb.EffectResult) bool {
-		return (v.TriggerTime.EventPhase == gameDS.EventPhase) && (v.TriggerTime.HookType == gameDS.HookType)
+		return (v.TriggerTime.EventPhase == gameDS.EventPhase) &&
+			(v.TriggerTime.HookType == gameDS.HookType)
 	})
 	sort.Slice(tarEf, func(i, j int) bool {
 		return tarEf[i].TriggerTime.SubCount < tarEf[i].TriggerTime.SubCount
@@ -133,36 +137,40 @@ func (this *ULZGameDuelServiceBackend) phaseTrigEf(gameDS *pb.GameDataSet, shift
 		return (v.EfOption == pb.EffectOption_Status_FixValue)
 	})
 
+	DirectDmg := nodeFilter(tarEf, func(v *pb.EffectResult) bool {
+		return (v.EfOption == pb.EffectOption_Instance_Change)
+	})
+
 	gameDSTmp := pb.GameDataSet{}
 	copier.Copy(&gameDSTmp, gameDS)
 
-	for _, v := range tarEf {
-		if v.EfOption == pb.EffectOption_Instance_Change {
-			if v.TarSide == pb.PlayerSide_HOST {
-				gameDSTmp.HostCardDeck[v.TarCard].HpInst += v.Hp
-				gameDSTmp.HostCardDeck[v.TarCard].ApInst += v.Ap
-				gameDSTmp.HostCardDeck[v.TarCard].DpInst += v.Dp
-			} else {
-				gameDSTmp.DuelCardDeck[v.TarCard].HpInst += v.Hp
-				gameDSTmp.DuelCardDeck[v.TarCard].ApInst += v.Ap
-				gameDSTmp.DuelCardDeck[v.TarCard].DpInst += v.Dp
-			}
-		} else if v.EfOption == pb.EffectOption_Status_Addition {
-			if v.TarSide == pb.PlayerSide_HOST {
-				gameDSTmp.HostCardDeck[v.TarCard].HpOrig += v.Hp
-				gameDSTmp.HostCardDeck[v.TarCard].ApOrig += v.Ap
-				gameDSTmp.HostCardDeck[v.TarCard].DpOrig += v.Dp
-			} else {
-				gameDSTmp.DuelCardDeck[v.TarCard].HpOrig += v.Hp
-				gameDSTmp.DuelCardDeck[v.TarCard].ApOrig += v.Ap
-				gameDSTmp.DuelCardDeck[v.TarCard].DpOrig += v.Dp
-			}
+	// return be4 run loop
+	if len(DirectDmg) == 0 {
+		return
+	}
+
+	for _, v := range DirectDmg {
+		if v.TarSide == pb.PlayerSide_HOST {
+			gameDSTmp.HostCardDeck[v.TarCard].HpInst += v.Hp
+			gameDSTmp.HostCardDeck[v.TarCard].ApInst += v.Ap
+			gameDSTmp.HostCardDeck[v.TarCard].DpInst += v.Dp
+		} else {
+			gameDSTmp.DuelCardDeck[v.TarCard].HpInst += v.Hp
+			gameDSTmp.DuelCardDeck[v.TarCard].ApInst += v.Ap
+			gameDSTmp.DuelCardDeck[v.TarCard].DpInst += v.Dp
 		}
 	}
+
+	//Hp handle:
+	// if the value higher than orig, reset asd orig
+	// if the value lower than 0, set as 0 ,
+	// 		if it is current => raise dead-flag
+	//
 
 	// for k,v:= {
 
 	// }
+	return
 }
 
 // EffectResult sorting

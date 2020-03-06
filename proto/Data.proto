@@ -167,6 +167,8 @@ message SkillCardCond {
     SignEq                      compare                 = 3;  
 }
 
+
+// sprite-display 
 message StatusSet {
     int32                       id                      = 1;
     string                      status_id               = 2;
@@ -206,6 +208,7 @@ message EffectResult {
     int32                       remain_cd               = 16;
     string                      assign_from             = 17;
     int32                       skill_id                = 18;
+    int32                       status_id               = 19;
 }
 
 enum    EffectOption{
@@ -227,3 +230,5 @@ message  EffectTiming {
     EventHookType               hook_type               = 2;
     int32                       sub_count               = 3;
 }
+
+
