@@ -186,9 +186,9 @@ message EffectResult {
     int32                       tar_card                = 1;
     PlayerSide                  tar_side                = 2;
     // trigger-time
-    EventHookPhase              event_phase             = 3;
-    EventHookType               hook_type               = 4;
-    int32                       sub_count               = 5;
+    EffectTiming                trigger_time            = 3;
+    EffectTiming                end_time                = 4;
+    bool                        sub_count               = 5;
     
     // effect
     EffectOption                ef_option               = 6;
@@ -215,6 +215,15 @@ enum    EffectOption{
     //  Instance_Change :
     //    like posion, it will -1 to inst_value in CC
     Instance_Change             = 1;
+    // Status_FixVal :
+    //    like Ex Indomitable Spirit , it will last one blood
+    Status_FixValue             = 2;
 }
 
 // !SECTION: Data.proto
+
+message  EffectTiming {
+    EventHookPhase              event_phase             = 1;
+    EventHookType               hook_type               = 2;
+    int32                       sub_count               = 3;
+}

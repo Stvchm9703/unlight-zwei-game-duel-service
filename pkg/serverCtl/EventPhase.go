@@ -130,21 +130,25 @@ func (this *ULZGameDuelServiceBackend) phaseTrigEf(gameDS *pb.GameDataSet, shift
 		return tarEf[i].SubCount < tarEf[i].SubCount
 	})
 	FixEf := nodeFilter(tarEf, func(v *pb.EffectResult) bool {
-		return (v.EfOption == pb.SignEq_EQUAL)
+		return (v.EfOption == pb.EffectOption_Status_Addition)
 	})
 
 	gameDSTmp := pb.GameDataSet{}
 	copier.Copy(&gameDSTmp, gameDS)
-
+	var HostEff, DuelEff pb.EffectResult
 	for _, v := range tarEf {
-		if v.TarSide == pb.PlayerSide_HOST {
-			gameDSTmp.HostCardDeck[v.TarCard].HpInst += v.Hp
-			gameDSTmp.HostCardDeck[v.TarCard].ApInst += v.Ap
-			gameDSTmp.HostCardDeck[v.TarCard].DpInst += v.Dp
-		} else {
-			gameDSTmp.DuelCardDeck[v.TarCard].HpInst += v.Hp
-			gameDSTmp.DuelCardDeck[v.TarCard].ApInst += v.Ap
-			gameDSTmp.DuelCardDeck[v.TarCard].DpInst += v.Dp
+		if v.EfOption == pb.EffectOption_Instance_Change {
+			if v.TarSide == pb.PlayerSide_HOST {
+				gameDSTmp.HostCardDeck[v.TarCard].HpInst += v.Hp
+				gameDSTmp.HostCardDeck[v.TarCard].ApInst += v.Ap
+				gameDSTmp.HostCardDeck[v.TarCard].DpInst += v.Dp
+			} else {
+				gameDSTmp.DuelCardDeck[v.TarCard].HpInst += v.Hp
+				gameDSTmp.DuelCardDeck[v.TarCard].ApInst += v.Ap
+				gameDSTmp.DuelCardDeck[v.TarCard].DpInst += v.Dp
+			}
+		} else if v.EfOption == pb.EffectOption_Status_Addition {
+			// Host.HpInst
 		}
 	}
 
