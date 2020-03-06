@@ -124,18 +124,18 @@ func (this *ULZGameDuelServiceBackend) phaseTrigEf(gameDS *pb.GameDataSet, shift
 	}
 
 	tarEf := nodeFilter(efResList, func(v *pb.EffectResult) bool {
-		return (v.EventPhase == gameDS.EventPhase) && (v.HookType == gameDS.HookType)
+		return (v.TriggerTime.EventPhase == gameDS.EventPhase) && (v.TriggerTime.HookType == gameDS.HookType)
 	})
 	sort.Slice(tarEf, func(i, j int) bool {
-		return tarEf[i].SubCount < tarEf[i].SubCount
+		return tarEf[i].TriggerTime.SubCount < tarEf[i].TriggerTime.SubCount
 	})
 	FixEf := nodeFilter(tarEf, func(v *pb.EffectResult) bool {
-		return (v.EfOption == pb.EffectOption_Status_Addition)
+		return (v.EfOption == pb.EffectOption_Status_FixValue)
 	})
 
 	gameDSTmp := pb.GameDataSet{}
 	copier.Copy(&gameDSTmp, gameDS)
-	var HostEff, DuelEff pb.EffectResult
+
 	for _, v := range tarEf {
 		if v.EfOption == pb.EffectOption_Instance_Change {
 			if v.TarSide == pb.PlayerSide_HOST {
@@ -148,7 +148,15 @@ func (this *ULZGameDuelServiceBackend) phaseTrigEf(gameDS *pb.GameDataSet, shift
 				gameDSTmp.DuelCardDeck[v.TarCard].DpInst += v.Dp
 			}
 		} else if v.EfOption == pb.EffectOption_Status_Addition {
-			// Host.HpInst
+			if v.TarSide == pb.PlayerSide_HOST {
+				gameDSTmp.HostCardDeck[v.TarCard].HpOrig += v.Hp
+				gameDSTmp.HostCardDeck[v.TarCard].ApOrig += v.Ap
+				gameDSTmp.HostCardDeck[v.TarCard].DpOrig += v.Dp
+			} else {
+				gameDSTmp.DuelCardDeck[v.TarCard].HpOrig += v.Hp
+				gameDSTmp.DuelCardDeck[v.TarCard].ApOrig += v.Ap
+				gameDSTmp.DuelCardDeck[v.TarCard].DpOrig += v.Dp
+			}
 		}
 	}
 

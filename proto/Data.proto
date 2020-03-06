@@ -188,13 +188,13 @@ message EffectResult {
     // trigger-time
     EffectTiming                trigger_time            = 3;
     EffectTiming                end_time                = 4;
-    bool                        sub_count               = 5;
     
     // effect
-    EffectOption                ef_option               = 6;
-    int32                       hp                      = 7;
-    int32                       ap                      = 8;
-    int32                       dp                      = 9;
+    EffectOption                ef_option               = 5;
+    int32                       hp                      = 6;
+    int32                       ap                      = 7;
+    int32                       dp                      = 8;
+    int32                       mp                      = 9;
     bool                        disable_move            = 10;
     bool                        disable_atk             = 11;
     bool                        disable_def             = 12;
