@@ -95,7 +95,7 @@ message GameDataSet {
     bool                        is_duel_ready           = 18;
 
     //  Effect-result
-    repeated EffectResult      effect_counter          = 19;
+    repeated EffectResult       effect_counter          = 19;
 }
 
 

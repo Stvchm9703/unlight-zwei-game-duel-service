@@ -3,11 +3,12 @@ package serverCtl
 import (
 	pb "ULZGameDuelService/proto"
 	"context"
+	"fmt"
 	"log"
 	"sort"
+	"sync"
 
 	"github.com/gogo/status"
-	"github.com/jinzhu/copier"
 	"google.golang.org/grpc/codes"
 	// Static files
 	// _ "ULZGameDuelService/statik"
@@ -109,10 +110,11 @@ func (this *ULZGameDuelServiceBackend) moveNextPhase(gameDS *pb.GameDataSet, shi
 
 // phaseTrigEf : general phase trigger effect
 // it only handle Instance_Change / direct-dmg
-//
+// NOTE not available for atk/def, move phase calculation
 func (this *ULZGameDuelServiceBackend) phaseTrigEf(gameDS *pb.GameDataSet, shiftPhase pb.EventHookPhase, shiftType pb.EventCardType) {
 	var efResult pb.EffectNodeSnapMod
 	var efResList []*pb.EffectResult
+	taskHandler := "phaseTrigEf"
 	wkbox := this.searchAliveClient()
 	searchKey := gameDS.RoomKey + ":"
 	if gameDS.EffectCounter != nil {
@@ -141,35 +143,82 @@ func (this *ULZGameDuelServiceBackend) phaseTrigEf(gameDS *pb.GameDataSet, shift
 		return (v.EfOption == pb.EffectOption_Instance_Change)
 	})
 
-	gameDSTmp := pb.GameDataSet{}
-	copier.Copy(&gameDSTmp, gameDS)
-
 	// return be4 run loop
 	if len(DirectDmg) == 0 {
 		return
 	}
-
+	wg := sync.WaitGroup{}
 	for _, v := range DirectDmg {
-		if v.TarSide == pb.PlayerSide_HOST {
-			gameDSTmp.HostCardDeck[v.TarCard].HpInst += v.Hp
-			gameDSTmp.HostCardDeck[v.TarCard].ApInst += v.Ap
-			gameDSTmp.HostCardDeck[v.TarCard].DpInst += v.Dp
-		} else {
-			gameDSTmp.DuelCardDeck[v.TarCard].HpInst += v.Hp
-			gameDSTmp.DuelCardDeck[v.TarCard].ApInst += v.Ap
-			gameDSTmp.DuelCardDeck[v.TarCard].DpInst += v.Dp
+		bcMsg := pb.GDBroadcastResp{
+			RoomKey:      gameDS.RoomKey,
+			Msg:          fmt.Sprintf("Damage from ", v.AssignFrom),
+			Command:      pb.CastCmd_GET_INSTANCE_CARD,
+			CurrentPhase: gameDS.EventPhase,
+			PhaseHook:    gameDS.HookType,
 		}
+		wg.Add(1)
+		if v.TarSide == pb.PlayerSide_HOST {
+			// hp change
+			gameDS.HostCardDeck[v.TarCard].HpInst += v.Hp
+			if gameDS.HostCardDeck[v.TarCard].HpInst > gameDS.HostCardDeck[v.TarCard].HpOrig {
+				gameDS.HostCardDeck[v.TarCard].HpInst = gameDS.HostCardDeck[v.TarCard].HpOrig
+			}
+			if gameDS.HostCardDeck[v.TarCard].HpInst < 0 {
+				gameDS.HostCardDeck[v.TarCard].HpInst = 0
+			}
+
+			// ap change
+			gameDS.HostCardDeck[v.TarCard].ApInst += v.Ap
+			if gameDS.HostCardDeck[v.TarCard].ApInst > gameDS.HostCardDeck[v.TarCard].ApOrig {
+				gameDS.HostCardDeck[v.TarCard].ApInst = gameDS.HostCardDeck[v.TarCard].ApOrig
+			}
+			if gameDS.HostCardDeck[v.TarCard].ApInst < 0 {
+				gameDS.HostCardDeck[v.TarCard].ApInst = 0
+			}
+
+			// dp change
+			gameDS.HostCardDeck[v.TarCard].DpInst += v.Dp
+			if gameDS.HostCardDeck[v.TarCard].DpInst > gameDS.HostCardDeck[v.TarCard].DpOrig {
+				gameDS.HostCardDeck[v.TarCard].DpInst = gameDS.HostCardDeck[v.TarCard].DpOrig
+			}
+			if gameDS.HostCardDeck[v.TarCard].DpInst < 0 {
+				gameDS.HostCardDeck[v.TarCard].DpInst = 0
+			}
+
+		} else {
+			// hp change
+			gameDS.DuelCardDeck[v.TarCard].HpInst += v.Hp
+			if gameDS.DuelCardDeck[v.TarCard].HpInst > gameDS.DuelCardDeck[v.TarCard].HpOrig {
+				gameDS.DuelCardDeck[v.TarCard].HpInst = gameDS.DuelCardDeck[v.TarCard].HpOrig
+			}
+			if gameDS.DuelCardDeck[v.TarCard].HpInst < 0 {
+				gameDS.DuelCardDeck[v.TarCard].HpInst = 0
+			}
+
+			// ap change
+			gameDS.DuelCardDeck[v.TarCard].ApInst += v.Ap
+			if gameDS.DuelCardDeck[v.TarCard].ApInst > gameDS.DuelCardDeck[v.TarCard].ApOrig {
+				gameDS.DuelCardDeck[v.TarCard].ApInst = gameDS.DuelCardDeck[v.TarCard].ApOrig
+			}
+			if gameDS.DuelCardDeck[v.TarCard].ApInst < 0 {
+				gameDS.DuelCardDeck[v.TarCard].ApInst = 0
+			}
+
+			// dp change
+			gameDS.DuelCardDeck[v.TarCard].DpInst += v.Dp
+			if gameDS.DuelCardDeck[v.TarCard].DpInst > gameDS.DuelCardDeck[v.TarCard].DpOrig {
+				gameDS.DuelCardDeck[v.TarCard].DpInst = gameDS.DuelCardDeck[v.TarCard].DpOrig
+			}
+			if gameDS.DuelCardDeck[v.TarCard].DpInst < 0 {
+				gameDS.DuelCardDeck[v.TarCard].DpInst = 0
+			}
+		}
+		go func() {
+			this.BroadCast(&gameDS.RoomKey, &taskHandler, &bcMsg)
+			wg.Done()
+		}()
 	}
 
-	//Hp handle:
-	// if the value higher than orig, reset asd orig
-	// if the value lower than 0, set as 0 ,
-	// 		if it is current => raise dead-flag
-	//
-
-	// for k,v:= {
-
-	// }
 	return
 }
 

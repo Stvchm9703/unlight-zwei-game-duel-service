@@ -74,6 +74,7 @@ enum    CastCmd {
     GET_DEF_PHASE_RESULT    = 4;
     GET_INSTANCE_CARD       = 5;
     GET_GAMESET_RESULT      = 6;
+    INSTANCE_DAMAGE         = 7;
 }
 
 // -------------------------------------------------------------
