@@ -132,11 +132,11 @@ func (this *ULZGameDuelServiceBackend) phaseTrigEf(gameDS *pb.GameDataSet, shift
 		return (v.TriggerTime.EventPhase == gameDS.EventPhase) &&
 			(v.TriggerTime.HookType == gameDS.HookType)
 	})
+	if len(tarEf) == 0 {
+		return
+	}
 	sort.Slice(tarEf, func(i, j int) bool {
 		return tarEf[i].TriggerTime.SubCount < tarEf[i].TriggerTime.SubCount
-	})
-	FixEf := nodeFilter(tarEf, func(v *pb.EffectResult) bool {
-		return (v.EfOption == pb.EffectOption_Status_FixValue)
 	})
 
 	DirectDmg := nodeFilter(tarEf, func(v *pb.EffectResult) bool {
@@ -147,77 +147,91 @@ func (this *ULZGameDuelServiceBackend) phaseTrigEf(gameDS *pb.GameDataSet, shift
 	if len(DirectDmg) == 0 {
 		return
 	}
+
 	wg := sync.WaitGroup{}
-	for _, v := range DirectDmg {
+
+	// Status release
+	// 	 Damage part first
+	wg.Add(3)
+	go func() {
 		bcMsg := pb.GDBroadcastResp{
 			RoomKey:      gameDS.RoomKey,
-			Msg:          fmt.Sprintf("Damage from ", v.AssignFrom),
+			Msg:          fmt.Sprintf("Damage from effect to player"),
 			Command:      pb.CastCmd_GET_INSTANCE_CARD,
 			CurrentPhase: gameDS.EventPhase,
 			PhaseHook:    gameDS.HookType,
+			EffectTrig:   DirectDmg,
 		}
-		wg.Add(1)
-		if v.TarSide == pb.PlayerSide_HOST {
-			// hp change
-			gameDS.HostCardDeck[v.TarCard].HpInst += v.Hp
-			if gameDS.HostCardDeck[v.TarCard].HpInst > gameDS.HostCardDeck[v.TarCard].HpOrig {
-				gameDS.HostCardDeck[v.TarCard].HpInst = gameDS.HostCardDeck[v.TarCard].HpOrig
-			}
-			if gameDS.HostCardDeck[v.TarCard].HpInst < 0 {
-				gameDS.HostCardDeck[v.TarCard].HpInst = 0
-			}
+		this.BroadCast(&gameDS.RoomKey, &taskHandler, &bcMsg)
+		wg.Done()
+	}()
+	go func() {
+		for _, v := range DirectDmg {
+			if v.TarSide == pb.PlayerSide_HOST {
+				// hp change
+				pointCalcute(&gameDS.HostCardDeck[v.TarCard].HpInst, &gameDS.HostCardDeck[v.TarCard].HpOrig, &v.Hp)
+				// ap change
+				pointCalcute(&gameDS.HostCardDeck[v.TarCard].ApInst, &gameDS.HostCardDeck[v.TarCard].ApOrig, &v.Ap)
+				// dp change
+				pointCalcute(&gameDS.HostCardDeck[v.TarCard].DpInst, &gameDS.HostCardDeck[v.TarCard].DpOrig, &v.Dp)
 
-			// ap change
-			gameDS.HostCardDeck[v.TarCard].ApInst += v.Ap
-			if gameDS.HostCardDeck[v.TarCard].ApInst > gameDS.HostCardDeck[v.TarCard].ApOrig {
-				gameDS.HostCardDeck[v.TarCard].ApInst = gameDS.HostCardDeck[v.TarCard].ApOrig
+			} else {
+				// hp change
+				pointCalcute(&gameDS.DuelCardDeck[v.TarCard].HpInst, &gameDS.DuelCardDeck[v.TarCard].HpOrig, &v.Hp)
+				// ap change
+				pointCalcute(&gameDS.DuelCardDeck[v.TarCard].ApInst, &gameDS.DuelCardDeck[v.TarCard].ApOrig, &v.Ap)
+				// dp change
+				pointCalcute(&gameDS.DuelCardDeck[v.TarCard].DpInst, &gameDS.DuelCardDeck[v.TarCard].DpOrig, &v.Dp)
 			}
-			if gameDS.HostCardDeck[v.TarCard].ApInst < 0 {
-				gameDS.HostCardDeck[v.TarCard].ApInst = 0
-			}
+			fmt.Println(v)
+		}
+		wg.Done()
+	}()
+	wg.Wait()
 
-			// dp change
-			gameDS.HostCardDeck[v.TarCard].DpInst += v.Dp
-			if gameDS.HostCardDeck[v.TarCard].DpInst > gameDS.HostCardDeck[v.TarCard].DpOrig {
-				gameDS.HostCardDeck[v.TarCard].DpInst = gameDS.HostCardDeck[v.TarCard].DpOrig
+	hostFixEf := nodeFilter(tarEf, func(v *pb.EffectResult) bool {
+		return (v.EfOption == pb.EffectOption_Status_FixValue) &&
+			(v.TarCard == gameDS.HostCurrCardKey) &&
+			(v.TarSide == pb.PlayerSide_HOST)
+	})
+	hostFixFin := pb.EffectResult{}
+	if len(hostFixEf) > 0 {
+		for _, v := range hostFixEf {
+			if v.Hp > hostFixFin.Hp {
+				hostFixFin.Hp = v.Hp
 			}
-			if gameDS.HostCardDeck[v.TarCard].DpInst < 0 {
-				gameDS.HostCardDeck[v.TarCard].DpInst = 0
+			if v.Ap > hostFixFin.Ap {
+				hostFixFin.Ap = v.Ap
 			}
-
-		} else {
-			// hp change
-			gameDS.DuelCardDeck[v.TarCard].HpInst += v.Hp
-			if gameDS.DuelCardDeck[v.TarCard].HpInst > gameDS.DuelCardDeck[v.TarCard].HpOrig {
-				gameDS.DuelCardDeck[v.TarCard].HpInst = gameDS.DuelCardDeck[v.TarCard].HpOrig
-			}
-			if gameDS.DuelCardDeck[v.TarCard].HpInst < 0 {
-				gameDS.DuelCardDeck[v.TarCard].HpInst = 0
-			}
-
-			// ap change
-			gameDS.DuelCardDeck[v.TarCard].ApInst += v.Ap
-			if gameDS.DuelCardDeck[v.TarCard].ApInst > gameDS.DuelCardDeck[v.TarCard].ApOrig {
-				gameDS.DuelCardDeck[v.TarCard].ApInst = gameDS.DuelCardDeck[v.TarCard].ApOrig
-			}
-			if gameDS.DuelCardDeck[v.TarCard].ApInst < 0 {
-				gameDS.DuelCardDeck[v.TarCard].ApInst = 0
-			}
-
-			// dp change
-			gameDS.DuelCardDeck[v.TarCard].DpInst += v.Dp
-			if gameDS.DuelCardDeck[v.TarCard].DpInst > gameDS.DuelCardDeck[v.TarCard].DpOrig {
-				gameDS.DuelCardDeck[v.TarCard].DpInst = gameDS.DuelCardDeck[v.TarCard].DpOrig
-			}
-			if gameDS.DuelCardDeck[v.TarCard].DpInst < 0 {
-				gameDS.DuelCardDeck[v.TarCard].DpInst = 0
+			if v.Dp > hostFixFin.Dp {
+				hostFixFin.Dp = v.Dp
 			}
 		}
-		go func() {
-			this.BroadCast(&gameDS.RoomKey, &taskHandler, &bcMsg)
-			wg.Done()
-		}()
 	}
+
+	duelFixEf := nodeFilter(tarEf, func(v *pb.EffectResult) bool {
+		return (v.EfOption == pb.EffectOption_Status_FixValue) &&
+			(v.TarCard == gameDS.DuelCurrCardKey) &&
+			(v.TarSide == pb.PlayerSide_DUELER)
+	})
+
+	duelFixFin := pb.EffectResult{}
+	if len(hostFixEf) > 0 {
+		for _, v := range hostFixEf {
+			if v.Hp > duelFixFin.Hp {
+				duelFixFin.Hp = v.Hp
+			}
+			if v.Ap > duelFixFin.Ap {
+				duelFixFin.Ap = v.Ap
+			}
+			if v.Dp > duelFixFin.Dp {
+				duelFixFin.Dp = v.Dp
+			}
+		}
+	}
+
+	fmt.Printf("hostFix : %#v \n", hostFixEf)
+	fmt.Printf("duelFix : %#v \n", duelFixEf)
 
 	return
 }
@@ -231,4 +245,15 @@ func nodeFilter(vs []*pb.EffectResult, f func(*pb.EffectResult) bool) []*pb.Effe
 		}
 	}
 	return vsf
+}
+
+// point calculate
+func pointCalcute(inst *int32, orig *int32, value *int32) {
+	*inst += *value
+	if *inst > *orig {
+		*inst = *orig
+	}
+	if *inst < 0 {
+		*inst = 0
+	}
 }
