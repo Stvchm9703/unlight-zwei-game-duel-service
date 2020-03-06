@@ -60,6 +60,13 @@ func (this *GDBroadcastResp) Validate() error {
 			}
 		}
 	}
+	for _, item := range this.EffectTrig {
+		if item != nil {
+			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
+				return github_com_mwitkow_go_proto_validators.FieldError("EffectTrig", err)
+			}
+		}
+	}
 	return nil
 }
 func (this *GDInstanceDT) Validate() error {
