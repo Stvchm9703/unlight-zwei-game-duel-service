@@ -91,5 +91,18 @@ func (this *StatusSet) Validate() error {
 	return nil
 }
 func (this *EffectResult) Validate() error {
+	if this.TriggerTime != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.TriggerTime); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("TriggerTime", err)
+		}
+	}
+	if this.EndTime != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.EndTime); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("EndTime", err)
+		}
+	}
+	return nil
+}
+func (this *EffectTiming) Validate() error {
 	return nil
 }
