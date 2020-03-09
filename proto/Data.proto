@@ -224,7 +224,7 @@ enum    EffectOption{
     // Hard_Status_FicValue,
     // Somehow, Some Damage is 
     // "whatever card is not current use, but still give the damn damage"
-    Hard_Status_FixValue        = 3;
+    Hard_Instance_Change        = 3;
 }
 
 // !SECTION: Data.proto
