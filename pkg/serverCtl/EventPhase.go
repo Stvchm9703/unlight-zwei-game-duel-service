@@ -149,10 +149,11 @@ func (this *ULZGameDuelServiceBackend) phaseTrigEf(gameDS *pb.GameDataSet, shift
 	}
 
 	wg := sync.WaitGroup{}
+	var waitForClean []*pb.EffectResult
 
 	// Status release
 	// 	 Damage part first
-	wg.Add(3)
+	wg.Add(2)
 	go func() {
 		bcMsg := pb.GDBroadcastResp{
 			RoomKey:      gameDS.RoomKey,
@@ -184,54 +185,72 @@ func (this *ULZGameDuelServiceBackend) phaseTrigEf(gameDS *pb.GameDataSet, shift
 				pointCalcute(&gameDS.DuelCardDeck[v.TarCard].DpInst, &gameDS.DuelCardDeck[v.TarCard].DpOrig, &v.Dp)
 			}
 			fmt.Println(v)
+			waitForClean = append(waitForClean, v)
 		}
 		wg.Done()
 	}()
 	wg.Wait()
 
-	hostFixEf := nodeFilter(tarEf, func(v *pb.EffectResult) bool {
-		return (v.EfOption == pb.EffectOption_Status_FixValue) &&
-			(v.TarCard == gameDS.HostCurrCardKey) &&
-			(v.TarSide == pb.PlayerSide_HOST)
-	})
-	hostFixFin := pb.EffectResult{}
-	if len(hostFixEf) > 0 {
-		for _, v := range hostFixEf {
-			if v.Hp > hostFixFin.Hp {
-				hostFixFin.Hp = v.Hp
-			}
-			if v.Ap > hostFixFin.Ap {
-				hostFixFin.Ap = v.Ap
-			}
-			if v.Dp > hostFixFin.Dp {
-				hostFixFin.Dp = v.Dp
-			}
-		}
-	}
-
-	duelFixEf := nodeFilter(tarEf, func(v *pb.EffectResult) bool {
-		return (v.EfOption == pb.EffectOption_Status_FixValue) &&
-			(v.TarCard == gameDS.DuelCurrCardKey) &&
-			(v.TarSide == pb.PlayerSide_DUELER)
-	})
-
-	duelFixFin := pb.EffectResult{}
-	if len(hostFixEf) > 0 {
-		for _, v := range hostFixEf {
-			if v.Hp > duelFixFin.Hp {
-				duelFixFin.Hp = v.Hp
-			}
-			if v.Ap > duelFixFin.Ap {
-				duelFixFin.Ap = v.Ap
-			}
-			if v.Dp > duelFixFin.Dp {
-				duelFixFin.Dp = v.Dp
+	wg.Add(2)
+	var hostFixFin, duelFixFin pb.EffectResult
+	go func() {
+		hostFixEf := nodeFilter(tarEf, func(v *pb.EffectResult) bool {
+			return (v.EfOption == pb.EffectOption_Status_FixValue) &&
+				(v.TarCard == gameDS.HostCurrCardKey) &&
+				(v.TarSide == pb.PlayerSide_HOST)
+		})
+		if len(hostFixEf) > 0 {
+			for _, v := range hostFixEf {
+				if v.Hp > hostFixFin.Hp {
+					hostFixFin.Hp = v.Hp
+				}
+				if v.Ap > hostFixFin.Ap {
+					hostFixFin.Ap = v.Ap
+				}
+				if v.Dp > hostFixFin.Dp {
+					hostFixFin.Dp = v.Dp
+				}
 			}
 		}
-	}
+		wg.Done()
+	}()
+	go func() {
+		duelFixEf := nodeFilter(tarEf, func(v *pb.EffectResult) bool {
+			return (v.EfOption == pb.EffectOption_Status_FixValue) &&
+				(v.TarCard == gameDS.DuelCurrCardKey) &&
+				(v.TarSide == pb.PlayerSide_DUELER)
+		})
+		if len(duelFixEf) > 0 {
+			for _, v := range duelFixEf {
+				if v.Hp > duelFixFin.Hp {
+					duelFixFin.Hp = v.Hp
+				}
+				if v.Ap > duelFixFin.Ap {
+					duelFixFin.Ap = v.Ap
+				}
+				if v.Dp > duelFixFin.Dp {
+					duelFixFin.Dp = v.Dp
+				}
+			}
+		}
+		wg.Done()
+	}()
+	wg.Wait()
 
-	fmt.Printf("hostFix : %#v \n", hostFixEf)
-	fmt.Printf("duelFix : %#v \n", duelFixEf)
+	go func() {
+		bcMsg := pb.GDBroadcastResp{
+			RoomKey:      gameDS.RoomKey,
+			Msg:          fmt.Sprintf("Fix Effect from effect to player"),
+			Command:      pb.CastCmd_GET_INSTANCE_CARD,
+			CurrentPhase: gameDS.EventPhase,
+			PhaseHook:    gameDS.HookType,
+			EffectTrig: []*pb.EffectResult{
+				&hostFixFin, &duelFixFin,
+			},
+		}
+		this.BroadCast(&gameDS.RoomKey, &taskHandler, &bcMsg)
+	}()
+	// clean the effect by one cd
 
 	return
 }
