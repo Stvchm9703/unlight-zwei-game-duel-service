@@ -75,6 +75,7 @@ enum    CastCmd {
     GET_INSTANCE_CARD       = 5;
     GET_GAMESET_RESULT      = 6;
     INSTANCE_DAMAGE         = 7;
+    INSTANCE_STATUS_CHANGE  = 8;
 }
 
 // -------------------------------------------------------------

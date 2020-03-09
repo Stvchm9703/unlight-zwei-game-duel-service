@@ -221,6 +221,10 @@ enum    EffectOption{
     // Status_FixVal :
     //    like Ex Indomitable Spirit , it will last one blood
     Status_FixValue             = 2;
+    // Hard_Status_FicValue,
+    // Somehow, Some Damage is 
+    // "whatever card is not current use, but still give the damn damage"
+    Hard_Status_FixValue        = 3;
 }
 
 // !SECTION: Data.proto
