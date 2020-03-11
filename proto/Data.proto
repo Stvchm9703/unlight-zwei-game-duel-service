@@ -79,23 +79,14 @@ message GameDataSet {
     RangeType                   range                   = 11;
     // nvn 
     int32                       nvn                     = 12;
-
-
-
-    PlayerSide                  first_attack            = 13;
+    PlayerSide                  first_attack             = 13;
     PlayerSide                  curr_phase              = 14;
     //  event_phase, the event hook phase 
     EventHookPhase              event_phase             = 15;
     //  hook_type, the event hook type
     EventHookType               hook_type               = 16;
-
-
-    //  flaging 
-    bool                        is_host_ready           = 17;
-    bool                        is_duel_ready           = 18;
-
     //  Effect-result
-    repeated EffectResult       effect_counter          = 19;
+    repeated EffectResult       effect_counter          = 17;
 }
 
 
