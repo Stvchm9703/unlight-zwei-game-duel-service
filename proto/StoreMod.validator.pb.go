@@ -87,3 +87,6 @@ func (this *EffectNodeSnapMod) Validate() error {
 	}
 	return nil
 }
+func (this *PhaseSnapMod) Validate() error {
+	return nil
+}
