@@ -72,7 +72,7 @@ func (this *ULZGameDuelServiceBackend) CreateGame(ctx context.Context, req *pb.G
 	// event-card-control
 	new_gameset.HostEventCardDeck = genCardSet(150, 0)
 	new_gameset.DuelEventCardDeck = genCardSet(150, 0)
-	wg.Add(1)
+	wg.Add(3)
 	go func() {
 		tmpKey := req.RoomKey + ":HtEvtCrdDk"
 		if _, err := wkbox.SetPara(&tmpKey, new_gameset.HostCardDeck); err != nil {
@@ -81,7 +81,7 @@ func (this *ULZGameDuelServiceBackend) CreateGame(ctx context.Context, req *pb.G
 		}
 		wg.Done()
 	}()
-	wg.Add(1)
+
 	go func() {
 		tmpKey1 := req.RoomKey + ":DlEvtCrdDk"
 		if _, err := wkbox.SetPara(&tmpKey1, new_gameset.DuelCardDeck); err != nil {
@@ -90,9 +90,17 @@ func (this *ULZGameDuelServiceBackend) CreateGame(ctx context.Context, req *pb.G
 		}
 		wg.Done()
 	}()
+	go func() {
+		tmpKey := req.RoomKey + ":PhaseState"
+		phase_inst := pb.MovePhaseSnapMod{}
+		if _, err := wkbox.SetPara(&tmpKey, phase_inst); err != nil {
+			log.Println(err)
+			errCh <- status.Errorf(codes.Internal, err.Error())
+		}
+		wg.Done()
+	}()
 
 	// move-instance
-	wg.Add(1)
 	go func() {
 		tmpKey2 := req.RoomKey + ":MvPhMod"
 		move_instance := pb.MovePhaseSnapMod{

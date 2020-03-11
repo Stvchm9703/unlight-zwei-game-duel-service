@@ -104,7 +104,7 @@ func (this *ULZGameDuelServiceBackend) MovePhaseConfirm(ctx context.Context, req
 			return nil, status.Errorf(codes.Internal, err.Error())
 		}
 		// both-ready; then move-next phase
-		// go this.phase_run
+		go this.moveNextPhase(&returner)
 	}
 	return &pb.Empty{}, nil
 
@@ -143,15 +143,15 @@ func (this *ULZGameDuelServiceBackend) MovePhaseConfirm(ctx context.Context, req
  */
 
 func (this *ULZGameDuelServiceBackend) MovePhaseResult(ctx context.Context, req *pb.GDGetInfoReq) (*pb.GDMoveConfirmResp, error) {
-	cm.PrintReqLog(ctx, "Draw-Phase-Confirm", req)
+	cm.PrintReqLog(ctx, "Move-Phase-Result", req)
 	start := time.Now()
-	this.mu.Lock()
+	// this.mu.Lock()
 	wkbox := this.searchAliveClient()
 	defer func() {
 		wkbox.Preserve(false)
-		this.mu.Unlock()
+		// this.mu.Unlock()
 		elapsed := time.Since(start)
-		log.Printf("Draw-Phase-Confirm took %s", elapsed)
+		log.Printf("Move-Phase-Result took %s", elapsed)
 	}()
 
 	var snapMovekey = req.RoomKey + ":MvPhModResult"
@@ -160,5 +160,6 @@ func (this *ULZGameDuelServiceBackend) MovePhaseResult(ctx context.Context, req 
 		log.Println(err)
 		return nil, status.Errorf(codes.NotFound, err.Error())
 	}
+
 	return &snapMove, nil
 }

@@ -4,8 +4,6 @@ import (
 	pb "ULZGameDuelService/proto"
 	"context"
 	"fmt"
-	"log"
-	"sort"
 	"sync"
 
 	"github.com/gogo/status"
@@ -16,6 +14,46 @@ import (
 
 /**
  * 		go-routine {
+ * 			---- start_turn_phase
+ * 				[start_turn_phase:before] {
+ * 					phaseTrigEf ()
+ * 				}
+ * 			[start_turn_phase:proxy] {
+ * 				1. turn ++
+ * 			}
+ * 				[start_turn_phase:after] {
+ * 					phaseTrigEf ()
+ * 				}
+ * 			-------------------------------------
+ * 			draw-phase
+ * 			---- refill_action_card_phase
+ *
+ * 				[refill_action_card_phase:before] {
+ *					phaseTrigEf ()
+ * 				}
+ *			[refill_action_card_phase:proxy] {
+ *				1. wait for [*confirm] request
+ * 			}
+ *				[refill_action_card_phase:before] {
+ *					phaseTrigEf ()
+ * 				}
+ *
+ * 			-------------------------------------
+ *			----  determine_battle_point_phase
+ *
+ * 				[determine_battle_point_phase:before] {
+ * 					phaseTrigEf ()
+ * 				}
+ *
+ * 			[determine_battle_point_phase:proxy] {
+ * 				1. dice-roll from sub-client
+ * 				2. store dice-roll first-result
+ * 			}
+ * 			 	[determine_battle_point_phase:after] {
+ * 					phaseTrigEf ()
+ * 				}
+ * 			-------------------------------------
+ *
  * 			---- determine_battle_point_phase
  * 			move next phase [determine_battle_point_phase:before] {
  * 				if ef-node > 0
@@ -97,173 +135,18 @@ func (this *ULZGameDuelServiceBackend) EventPhaseResult(context.Context, *pb.GDG
 	return nil, status.Error(codes.Unimplemented, "EVENT_PHASE_RESULT")
 }
 
-func (this *ULZGameDuelServiceBackend) moveNextPhase(gameDS *pb.GameDataSet, shiftPhase pb.EventHookPhase, shiftType pb.EventCardType) {
+func (this *ULZGameDuelServiceBackend) moveNextPhase(gameDS *pb.GameDataSet, shiftPhase pb.EventHookPhase, shiftType pb.EventHookType) {
 	switch gameDS.HookType {
 	case pb.EventHookType_Before, pb.EventHookType_After:
-		this.phaseTrigEf(gameDS, shiftPhase, shiftType)
+		this.phaseTrigEf(gameDS)
 		break
 	case pb.EventHookType_Proxy:
+		this.proxyHandle(gameDS)
 		break
 	}
 	// upshift the phase
-}
+	this.upshiftPhase(gameDS, shiftPhase, shiftType)
 
-// phaseTrigEf : general phase trigger effect
-// it only handle Instance_Change / direct-dmg
-// NOTE not available for atk/def, move phase calculation
-func (this *ULZGameDuelServiceBackend) phaseTrigEf(gameDS *pb.GameDataSet, shiftPhase pb.EventHookPhase, shiftType pb.EventCardType) {
-	var efResult pb.EffectNodeSnapMod
-	var efResList []*pb.EffectResult
-	taskHandler := "phaseTrigEf"
-	wkbox := this.searchAliveClient()
-	searchKey := gameDS.RoomKey + ":"
-	if gameDS.EffectCounter != nil {
-		efResList = gameDS.EffectCounter
-	} else {
-		if _, err := wkbox.GetPara(&searchKey, efResult); err != nil {
-			log.Println(err)
-		}
-	}
-	if len(efResList) == 0 {
-		return
-	}
-
-	tarEf := nodeFilter(efResList, func(v *pb.EffectResult) bool {
-		return (v.TriggerTime.EventPhase == gameDS.EventPhase) &&
-			(v.TriggerTime.HookType == gameDS.HookType)
-	})
-	if len(tarEf) == 0 {
-		return
-	}
-	sort.Slice(tarEf, func(i, j int) bool {
-		return tarEf[i].TriggerTime.SubCount < tarEf[i].TriggerTime.SubCount
-	})
-
-	DirectDmg := nodeFilter(tarEf, func(v *pb.EffectResult) bool {
-		return (v.EfOption == pb.EffectOption_Instance_Change)
-	})
-
-	// return be4 run loop
-	if len(DirectDmg) == 0 {
-		return
-	}
-
-	wg := sync.WaitGroup{}
-	var waitForClean []*pb.EffectResult
-
-	// Status release
-	// 	 Damage part first
-	wg.Add(2)
-	go func() {
-		bcMsg := pb.GDBroadcastResp{
-			RoomKey:      gameDS.RoomKey,
-			Msg:          fmt.Sprintf("Damage from effect to player"),
-			Command:      pb.CastCmd_GET_INSTANCE_CARD,
-			CurrentPhase: gameDS.EventPhase,
-			PhaseHook:    gameDS.HookType,
-			EffectTrig:   DirectDmg,
-		}
-		this.BroadCast(&gameDS.RoomKey, &taskHandler, &bcMsg)
-		wg.Done()
-	}()
-	go func() {
-		for _, v := range DirectDmg {
-			if v.TarSide == pb.PlayerSide_HOST {
-				// hp change
-				pointCalcute(&gameDS.HostCardDeck[v.TarCard].HpInst, &gameDS.HostCardDeck[v.TarCard].HpOrig, &v.Hp)
-				// ap change
-				pointCalcute(&gameDS.HostCardDeck[v.TarCard].ApInst, &gameDS.HostCardDeck[v.TarCard].ApOrig, &v.Ap)
-				// dp change
-				pointCalcute(&gameDS.HostCardDeck[v.TarCard].DpInst, &gameDS.HostCardDeck[v.TarCard].DpOrig, &v.Dp)
-
-			} else {
-				// hp change
-				pointCalcute(&gameDS.DuelCardDeck[v.TarCard].HpInst, &gameDS.DuelCardDeck[v.TarCard].HpOrig, &v.Hp)
-				// ap change
-				pointCalcute(&gameDS.DuelCardDeck[v.TarCard].ApInst, &gameDS.DuelCardDeck[v.TarCard].ApOrig, &v.Ap)
-				// dp change
-				pointCalcute(&gameDS.DuelCardDeck[v.TarCard].DpInst, &gameDS.DuelCardDeck[v.TarCard].DpOrig, &v.Dp)
-			}
-			fmt.Println(v)
-			waitForClean = append(waitForClean, v)
-		}
-		wg.Done()
-	}()
-	wg.Wait()
-
-	wg.Add(2)
-	var hostFixFin, duelFixFin pb.EffectResult
-	go func() {
-		hostFixEf := nodeFilter(tarEf, func(v *pb.EffectResult) bool {
-			return (v.EfOption == pb.EffectOption_Status_FixValue) &&
-				(v.TarCard == gameDS.HostCurrCardKey) &&
-				(v.TarSide == pb.PlayerSide_HOST)
-		})
-		if len(hostFixEf) > 0 {
-			for _, v := range hostFixEf {
-				if v.Hp > hostFixFin.Hp {
-					hostFixFin.Hp = v.Hp
-				}
-				if v.Ap > hostFixFin.Ap {
-					hostFixFin.Ap = v.Ap
-				}
-				if v.Dp > hostFixFin.Dp {
-					hostFixFin.Dp = v.Dp
-				}
-			}
-		}
-		wg.Done()
-	}()
-	go func() {
-		duelFixEf := nodeFilter(tarEf, func(v *pb.EffectResult) bool {
-			return (v.EfOption == pb.EffectOption_Status_FixValue) &&
-				(v.TarCard == gameDS.DuelCurrCardKey) &&
-				(v.TarSide == pb.PlayerSide_DUELER)
-		})
-		if len(duelFixEf) > 0 {
-			for _, v := range duelFixEf {
-				if v.Hp > duelFixFin.Hp {
-					duelFixFin.Hp = v.Hp
-				}
-				if v.Ap > duelFixFin.Ap {
-					duelFixFin.Ap = v.Ap
-				}
-				if v.Dp > duelFixFin.Dp {
-					duelFixFin.Dp = v.Dp
-				}
-			}
-		}
-		wg.Done()
-	}()
-	wg.Wait()
-
-	go func() {
-		bcMsg := pb.GDBroadcastResp{
-			RoomKey:      gameDS.RoomKey,
-			Msg:          fmt.Sprintf("Fix Effect from effect to player"),
-			Command:      pb.CastCmd_GET_INSTANCE_CARD,
-			CurrentPhase: gameDS.EventPhase,
-			PhaseHook:    gameDS.HookType,
-			EffectTrig: []*pb.EffectResult{
-				&hostFixFin, &duelFixFin,
-			},
-		}
-		this.BroadCast(&gameDS.RoomKey, &taskHandler, &bcMsg)
-	}()
-	// clean the effect by one cd
-
-	return
-}
-
-// EffectResult sorting
-func nodeFilter(vs []*pb.EffectResult, f func(*pb.EffectResult) bool) []*pb.EffectResult {
-	vsf := make([]*pb.EffectResult, 0)
-	for _, v := range vs {
-		if f(v) {
-			vsf = append(vsf, v)
-		}
-	}
-	return vsf
 }
 
 // point calculate
@@ -275,4 +158,123 @@ func pointCalcute(inst *int32, orig *int32, value *int32) {
 	if *inst < 0 {
 		*inst = 0
 	}
+}
+
+func (this *ULZGameDuelServiceBackend) upshiftPhase(gameSet *pb.GameDataSet, shiftPhase pb.EventHookPhase, shiftType pb.EventHookType) (bool, error) {
+	fmt.Printf("current phase: %#v,\tcurrent hook: %#v ;\n", gameSet.EventPhase, gameSet.HookType)
+	fmt.Printf("target phase: %#v ,\ttarget hook: %#v; \n", shiftPhase, shiftType)
+	assigner := "upshiftPhaseHandler"
+
+	// check dead char
+	isHostDead := (gameSet.HostCardDeck[gameSet.HostCurrCardKey].HpInst <= 0)
+	isDuelDead := (gameSet.DuelCardDeck[gameSet.DuelCurrCardKey].HpInst <= 0)
+
+	hostAllDead := 0
+	duelAllDead := 0
+
+	wg := sync.WaitGroup{}
+	if gameSet.Nvn > 1 {
+		wg.Add(2)
+		go func() {
+			for k := range gameSet.HostCardDeck {
+				if gameSet.HostCardDeck[k].HpInst <= 0 {
+					hostAllDead++
+				}
+			}
+			wg.Done()
+		}()
+		go func() {
+			for k := range gameSet.DuelCardDeck {
+				if gameSet.DuelCardDeck[k].HpInst <= 0 {
+					duelAllDead++
+				}
+			}
+			wg.Done()
+		}()
+		wg.Wait()
+	}
+
+	ChangeFlag := false
+	EndGameFlag := false
+	wg.Add(1)
+	go func() {
+		if isHostDead && len(gameSet.HostCardDeck) > hostAllDead {
+			this.BroadCast(&gameSet.RoomKey, &assigner, &pb.GDBroadcastResp{
+				RoomKey: gameSet.RoomKey,
+				Msg:     fmt.Sprintf("HostCharIsDead,ChangeChar"),
+				Command: pb.CastCmd_INSTANCE_STATUS_CHANGE,
+			})
+		} else if isHostDead && len(gameSet.HostCardDeck) == hostAllDead {
+			this.BroadCast(&gameSet.RoomKey, &assigner, &pb.GDBroadcastResp{
+				RoomKey: gameSet.RoomKey,
+				Msg:     fmt.Sprintf("HostCharIsDead"),
+				Command: pb.CastCmd_INSTANCE_STATUS_CHANGE,
+			})
+		}
+		wg.Done()
+	}()
+	go func() {
+		if isDuelDead && len(gameSet.DuelCardDeck) > duelAllDead {
+			this.BroadCast(&gameSet.RoomKey, &assigner, &pb.GDBroadcastResp{
+				RoomKey: gameSet.RoomKey,
+				Msg:     fmt.Sprintf("DuelCharIsDead,ChangeChar"),
+				Command: pb.CastCmd_INSTANCE_STATUS_CHANGE,
+			})
+		} else if isDuelDead && len(gameSet.DuelCardDeck) == duelAllDead {
+			this.BroadCast(&gameSet.RoomKey, &assigner, &pb.GDBroadcastResp{
+				RoomKey: gameSet.RoomKey,
+				Msg:     fmt.Sprintf("DuelCharIsDead"),
+				Command: pb.CastCmd_INSTANCE_STATUS_CHANGE,
+			})
+		}
+		wg.Done()
+	}()
+	wg.Wait()
+	// wg.Add(1)
+	if EndGameFlag {
+		gameSet.EventPhase = pb.EventHookPhase_gameset_end
+		gameSet.HookType = pb.EventHookType_Before
+		return true, nil
+	}
+	if ChangeFlag {
+		gameSet.EventPhase = pb.EventHookPhase_dead_chara_change_phase
+		gameSet.HookType = pb.EventHookType_Before
+		return true, nil
+	}
+
+	// --------------------------------------------------
+	// start shift-next
+	if gameSet.HookType == pb.EventHookType_Before {
+		gameSet.HookType = pb.EventHookType_Proxy
+		return false, nil
+	} else if gameSet.HookType == pb.EventHookType_After {
+		gameSet.HookType = pb.EventHookType_Before
+	}
+
+	// switch gameSet.EventPhase {
+	// case pb.EventHookPhase_battle_result_phase:
+	// 	gameSet.EventPhase = pb.EventHookPhase_finish_turn_phase
+	// 	break
+	// case pb.EventHookPhase_determine_dead_chara_change_phase:
+	// 	break
+	// case pb.EventHookPhase_change_initiative_phase:
+	// 	gameSet.EventPhase = pb.EventHookPhase_attack_card_drop_phase
+	// 	break
+	// default:
+	// 	gameSet.EventPhase++
+	// }
+
+	return false, nil
+}
+
+func isManualHandlePhase(in pb.EventHookPhase) bool {
+	switch in {
+	case pb.EventHookPhase_move_card_drop_phase:
+	case pb.EventHookPhase_chara_change_phase:
+	case pb.EventHookPhase_attack_card_drop_phase:
+	case pb.EventHookPhase_defence_card_drop_phase:
+	case pb.EventHookPhase_dead_chara_change_phase:
+		return true
+	}
+	return false
 }
