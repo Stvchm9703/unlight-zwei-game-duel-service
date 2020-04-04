@@ -14,9 +14,8 @@ import (
 func (this *ULZGameDuelServiceBackend) phaseTrigEf(gameDS *pb.GameDataSet) {
 	var efResult pb.EffectNodeSnapMod
 	var efResList []*pb.EffectResult
-	taskHandler := "phaseTrigEf"
 	wkbox := this.searchAliveClient()
-	searchKey := gameDS.RoomKey + ":"
+	searchKey := gameDS.RoomKey + efResult.RdsKeyName()
 	if gameDS.EffectCounter != nil {
 		efResList = gameDS.EffectCounter
 	} else {
@@ -68,7 +67,7 @@ func (this *ULZGameDuelServiceBackend) phaseTrigEf(gameDS *pb.GameDataSet) {
 			PhaseHook:    gameDS.HookType,
 			EffectTrig:   append(DirectDmg, HardDmg...),
 		}
-		this.BroadCast(&gameDS.RoomKey, &taskHandler, &bcMsg)
+		this.BroadCast(&bcMsg)
 		wg.Done()
 	}()
 	go func() {
@@ -169,6 +168,7 @@ func (this *ULZGameDuelServiceBackend) phaseTrigEf(gameDS *pb.GameDataSet) {
 	}()
 	wg.Wait()
 
+	wg.Add(2)
 	go func() {
 		bcMsg := pb.GDBroadcastResp{
 			RoomKey:      gameDS.RoomKey,
@@ -180,14 +180,15 @@ func (this *ULZGameDuelServiceBackend) phaseTrigEf(gameDS *pb.GameDataSet) {
 				&hostFixFin, &duelFixFin,
 			},
 		}
-		this.BroadCast(&gameDS.RoomKey, &taskHandler, &bcMsg)
+		this.BroadCast(&bcMsg)
 	}()
+	// go wkbox.SetPara(&gameDS.RoomKey, gameDS)
 	// clean the effect by one cd
 	fmt.Printf("%#v", waitForClean)
 	pb.CleanAfterExec(efResList, waitForClean)
 
 	go func() {
-		this.BroadCast(&gameDS.RoomKey, &taskHandler, &pb.GDBroadcastResp{
+		this.BroadCast(&pb.GDBroadcastResp{
 			RoomKey:      gameDS.RoomKey,
 			Msg:          fmt.Sprintf("EndOfEventPhase,WaitForConfirm"),
 			Command:      pb.CastCmd_GET_EFFECT_RESULT,
@@ -195,11 +196,19 @@ func (this *ULZGameDuelServiceBackend) phaseTrigEf(gameDS *pb.GameDataSet) {
 			PhaseHook:    gameDS.HookType,
 		})
 	}()
+	fmt.Println(efResult)
 	// save data
 	wkbox = this.searchAliveClient()
-	if _, err := wkbox.SetPara(&searchKey, efResult); err != nil {
-		log.Println(err)
-	}
+	wg.Add(2)
+	go func() {
+		wkbox.SetPara(&gameDS.RoomKey, gameDS)
+		wg.Done()
+	}()
+	go func() {
+		wkbox.SetPara(&searchKey, efResult)
+		wg.Done()
+	}()
+	wg.Wait()
 	wkbox.Preserve(false)
 	return
 }

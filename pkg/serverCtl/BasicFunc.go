@@ -39,6 +39,7 @@ func (this *ULZGameDuelServiceBackend) CreateGame(ctx context.Context, req *pb.G
 		}
 		return &returner, status.Error(codes.AlreadyExists, "create-game,the room exist 1")
 	}
+	gameSetKey := req.RoomKey + ":GameDS"
 	new_gameset := pb.GameDataSet{
 		// by request
 		RoomKey:         req.RoomKey,
@@ -55,15 +56,13 @@ func (this *ULZGameDuelServiceBackend) CreateGame(ctx context.Context, req *pb.G
 		HookType:        pb.EventHookType_Before,
 		FirstAttack:     pb.PlayerSide_HOST,
 		CurrPhase:       0,
-		IsHostReady:     false,
-		IsDuelReady:     false,
 		EffectCounter:   nil,
 	}
 
 	// new_gameset.HostEvent
 	// return nil, status.Error(codes.Unimplemented, "CREATE_GAME")
 	// Set Para
-	if _, err := wkbox.SetPara(&req.RoomKey, new_gameset); err != nil {
+	if _, err := wkbox.SetPara(&gameSetKey, new_gameset); err != nil {
 		log.Println(err)
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -91,8 +90,15 @@ func (this *ULZGameDuelServiceBackend) CreateGame(ctx context.Context, req *pb.G
 		wg.Done()
 	}()
 	go func() {
-		tmpKey := req.RoomKey + ":PhaseState"
-		phase_inst := pb.MovePhaseSnapMod{}
+		phase_inst := pb.PhaseSnapMod{
+			Turns:       1,
+			EventPhase:  pb.EventHookPhase_gameset_start,
+			HookType:    pb.EventHookType_Proxy,
+			IsHostReady: false,
+			IsDuelReady: false,
+		}
+		tmpKey := req.RoomKey + phase_inst.RdsKeyName()
+
 		if _, err := wkbox.SetPara(&tmpKey, phase_inst); err != nil {
 			log.Println(err)
 			errCh <- status.Errorf(codes.Internal, err.Error())
@@ -102,12 +108,10 @@ func (this *ULZGameDuelServiceBackend) CreateGame(ctx context.Context, req *pb.G
 
 	// move-instance
 	go func() {
-		tmpKey2 := req.RoomKey + ":MvPhMod"
 		move_instance := pb.MovePhaseSnapMod{
-			Turns:       0,
-			IsDuelReady: false,
-			IsHostReady: false,
+			Turns: 0,
 		}
+		tmpKey2 := req.RoomKey + move_instance.RdsKeyName()
 		if _, err := wkbox.SetPara(&tmpKey2, move_instance); err != nil {
 			log.Println(err)
 			errCh <- status.Errorf(codes.Internal, err.Error())
@@ -117,12 +121,12 @@ func (this *ULZGameDuelServiceBackend) CreateGame(ctx context.Context, req *pb.G
 	// ad-phase-instance
 	wg.Add(1)
 	go func() {
-		tmpKey3 := req.RoomKey + ":ADPhMod"
 		ad_instance := pb.ADPhaseSnapMod{
 			Turns:       0,
 			FirstAttack: 0,
 			EventPhase:  pb.EventHookPhase_start_turn_phase,
 		}
+		tmpKey3 := req.RoomKey + ad_instance.RdsKeyName()
 		if _, err := wkbox.SetPara(&tmpKey3, ad_instance); err != nil {
 			log.Println(err)
 			errCh <- status.Errorf(codes.Internal, err.Error())
@@ -133,11 +137,11 @@ func (this *ULZGameDuelServiceBackend) CreateGame(ctx context.Context, req *pb.G
 	//EffectNodeMod
 	wg.Add(1)
 	go func() {
-		tmpKey4 := req.RoomKey + ":EfMod"
 		ef_instance := pb.EffectNodeSnapMod{
 			Turns:     0,
 			PendingEf: nil,
 		}
+		tmpKey4 := req.RoomKey + ef_instance.RdsKeyName()
 		if _, err := wkbox.SetPara(&tmpKey4, ef_instance); err != nil {
 			log.Println(err)
 			errCh <- status.Errorf(codes.Internal, err.Error())

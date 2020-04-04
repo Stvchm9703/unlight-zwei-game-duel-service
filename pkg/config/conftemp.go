@@ -40,6 +40,7 @@ type CfAPIServer struct {
 	APIReferType string `toml:"api_refer_type" json:"api_refer_type" yaml:"api_refer_type"`
 	APITablePath string `toml:"api_table_filepath" json:"api_table_filepath" yaml:"api_table_filepath"`
 	APIOutpath   string `toml:"api_outpath" json:"api_outpath" yaml:"api_outpath"`
+	PollingPort  int    `toml:"polling_port" json:"polling_port" yaml:"polling_port"`
 }
 
 type CfTDatabase struct {

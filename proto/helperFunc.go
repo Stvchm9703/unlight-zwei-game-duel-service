@@ -2,6 +2,31 @@ package proto
 
 import "fmt"
 
+// RdsKeyName : the common modal naming for PhaseSnapMod
+func (*PhaseSnapMod) RdsKeyName() string {
+	return ":PhaseState"
+}
+
+// RdsKeyName : the common model naming for MovePhaseSnapMod
+func (*MovePhaseSnapMod) RdsKeyName() string {
+	return ":MvPhMod"
+}
+
+// RdsKeyName : the common model naming for MovePhaseResult
+func (*GDMoveConfirmResp) RdsKeyName() string {
+	return ":MvPhModResult"
+}
+
+// RdsKeyName : the common model naming for ADPhaseSnapMod
+func (*ADPhaseSnapMod) RdsKeyName() string {
+	return ":ADPhMod"
+}
+
+// RdsKeyName : the common model naming for EffectNodeSnapMod
+func (*EffectNodeSnapMod) RdsKeyName() string {
+	return ":EfMod"
+}
+
 func CleanAfterExec(orig []*EffectResult, changed []*EffectResult) {
 	fmt.Println("in orig, before exec")
 	for k := range orig {

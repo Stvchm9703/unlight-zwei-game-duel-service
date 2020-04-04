@@ -30,13 +30,13 @@ func (this *ULZGameDuelServiceBackend) InstSetEventCard(ctx context.Context, req
 		elapsed := time.Since(start)
 		log.Printf("Inst-Set-EventCard took %s", elapsed)
 	}()
-	sidetmp := req.Side.String()
+	// sidetmp := req.Side.String()
 	instKey := req.RoomKey + "_instMsg@" + req.Side.String()
 	go wkbox.SetParaWTO(&instKey, req, InstMsgStoreTime)
 
 	// broadcast have no ddp on redis execution
 	// go first
-	go this.BroadCast(&req.RoomKey, &sidetmp, &pb.GDBroadcastResp{
+	go this.BroadCast(&pb.GDBroadcastResp{
 		RoomKey:      req.RoomKey,
 		Msg:          "",
 		Command:      pb.CastCmd_GET_INSTANCE_CARD,

@@ -135,7 +135,7 @@ func (this *ULZGameDuelServiceBackend) EventPhaseResult(context.Context, *pb.GDG
 	return nil, status.Error(codes.Unimplemented, "EVENT_PHASE_RESULT")
 }
 
-func (this *ULZGameDuelServiceBackend) moveNextPhase(gameDS *pb.GameDataSet, shiftPhase pb.EventHookPhase, shiftType pb.EventHookType) {
+func (this *ULZGameDuelServiceBackend) moveNextPhase(gameDS *pb.GameDataSet, phaseMod *pb.PhaseSnapMod) {
 	switch gameDS.HookType {
 	case pb.EventHookType_Before, pb.EventHookType_After:
 		this.phaseTrigEf(gameDS)
@@ -145,7 +145,7 @@ func (this *ULZGameDuelServiceBackend) moveNextPhase(gameDS *pb.GameDataSet, shi
 		break
 	}
 	// upshift the phase
-	this.upshiftPhase(gameDS, shiftPhase, shiftType)
+	this.upshiftPhase(gameDS)
 
 }
 
@@ -160,10 +160,10 @@ func pointCalcute(inst *int32, orig *int32, value *int32) {
 	}
 }
 
-func (this *ULZGameDuelServiceBackend) upshiftPhase(gameSet *pb.GameDataSet, shiftPhase pb.EventHookPhase, shiftType pb.EventHookType) (bool, error) {
+func (this *ULZGameDuelServiceBackend) upshiftPhase(gameSet *pb.GameDataSet) (bool, error) {
 	fmt.Printf("current phase: %#v,\tcurrent hook: %#v ;\n", gameSet.EventPhase, gameSet.HookType)
-	fmt.Printf("target phase: %#v ,\ttarget hook: %#v; \n", shiftPhase, shiftType)
-	assigner := "upshiftPhaseHandler"
+	// fmt.Printf("target phase: %#v ,\ttarget hook: %#v; \n", shiftPhase, shiftType)
+	// assigner := "upshiftPhaseHandler"
 
 	// check dead char
 	isHostDead := (gameSet.HostCardDeck[gameSet.HostCurrCardKey].HpInst <= 0)
@@ -199,13 +199,13 @@ func (this *ULZGameDuelServiceBackend) upshiftPhase(gameSet *pb.GameDataSet, shi
 	wg.Add(1)
 	go func() {
 		if isHostDead && len(gameSet.HostCardDeck) > hostAllDead {
-			this.BroadCast(&gameSet.RoomKey, &assigner, &pb.GDBroadcastResp{
+			this.BroadCast(&pb.GDBroadcastResp{
 				RoomKey: gameSet.RoomKey,
 				Msg:     fmt.Sprintf("HostCharIsDead,ChangeChar"),
 				Command: pb.CastCmd_INSTANCE_STATUS_CHANGE,
 			})
 		} else if isHostDead && len(gameSet.HostCardDeck) == hostAllDead {
-			this.BroadCast(&gameSet.RoomKey, &assigner, &pb.GDBroadcastResp{
+			this.BroadCast(&pb.GDBroadcastResp{
 				RoomKey: gameSet.RoomKey,
 				Msg:     fmt.Sprintf("HostCharIsDead"),
 				Command: pb.CastCmd_INSTANCE_STATUS_CHANGE,
@@ -215,13 +215,13 @@ func (this *ULZGameDuelServiceBackend) upshiftPhase(gameSet *pb.GameDataSet, shi
 	}()
 	go func() {
 		if isDuelDead && len(gameSet.DuelCardDeck) > duelAllDead {
-			this.BroadCast(&gameSet.RoomKey, &assigner, &pb.GDBroadcastResp{
+			this.BroadCast(&pb.GDBroadcastResp{
 				RoomKey: gameSet.RoomKey,
 				Msg:     fmt.Sprintf("DuelCharIsDead,ChangeChar"),
 				Command: pb.CastCmd_INSTANCE_STATUS_CHANGE,
 			})
 		} else if isDuelDead && len(gameSet.DuelCardDeck) == duelAllDead {
-			this.BroadCast(&gameSet.RoomKey, &assigner, &pb.GDBroadcastResp{
+			this.BroadCast(&pb.GDBroadcastResp{
 				RoomKey: gameSet.RoomKey,
 				Msg:     fmt.Sprintf("DuelCharIsDead"),
 				Command: pb.CastCmd_INSTANCE_STATUS_CHANGE,
@@ -249,21 +249,40 @@ func (this *ULZGameDuelServiceBackend) upshiftPhase(gameSet *pb.GameDataSet, shi
 		return false, nil
 	} else if gameSet.HookType == pb.EventHookType_After {
 		gameSet.HookType = pb.EventHookType_Before
+		var nextEvent pb.EventHookPhase = gameSet.EventPhase
+		switch gameSet.EventPhase {
+		case pb.EventHookPhase_refill_action_card_phase:
+
+		case pb.EventHookPhase_move_card_drop_phase:
+			nextEvent = pb.EventHookPhase_determine_move_phase
+			break
+		case pb.EventHookPhase_determine_move_phase:
+			nextEvent = pb.EventHookPhase_finish_move_phase
+			break
+		case pb.EventHookPhase_finish_move_phase:
+			nextEvent = pb.EventHookPhase_attack_card_drop_phase
+			break
+
+		case pb.EventHookPhase_attack_card_drop_phase:
+			nextEvent = pb.EventHookPhase_defence_card_drop_phase
+			break
+		case pb.EventHookPhase_defence_card_drop_phase:
+			nextEvent = pb.EventHookPhase_determine_battle_point_phase
+			break
+		case pb.EventHookPhase_determine_battle_point_phase:
+			nextEvent = pb.EventHookPhase_battle_result_phase
+			break
+		case pb.EventHookPhase_battle_result_phase:
+			nextEvent = pb.EventHookPhase_damage_phase
+			break
+
+		case pb.EventHookPhase_change_initiative_phase:
+			nextEvent = pb.EventHookPhase_attack_card_drop_phase
+			break
+		default:
+			nextEvent++
+		}
 	}
-
-	// switch gameSet.EventPhase {
-	// case pb.EventHookPhase_battle_result_phase:
-	// 	gameSet.EventPhase = pb.EventHookPhase_finish_turn_phase
-	// 	break
-	// case pb.EventHookPhase_determine_dead_chara_change_phase:
-	// 	break
-	// case pb.EventHookPhase_change_initiative_phase:
-	// 	gameSet.EventPhase = pb.EventHookPhase_attack_card_drop_phase
-	// 	break
-	// default:
-	// 	gameSet.EventPhase++
-	// }
-
 	return false, nil
 }
 

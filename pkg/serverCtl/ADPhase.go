@@ -76,7 +76,7 @@ func (this *ULZGameDuelServiceBackend) ADPhaseConfirm(ctx context.Context, req *
 
 	// get data in routine
 	wg := sync.WaitGroup{}
-	wg.Add(2)
+	wg.Add(3)
 	errCh := make(chan error)
 	var returner pb.GameDataSet
 	go func() {
@@ -87,7 +87,7 @@ func (this *ULZGameDuelServiceBackend) ADPhaseConfirm(ctx context.Context, req *
 		wg.Done()
 	}()
 	var snapMod pb.ADPhaseSnapMod
-	var snapModkey = req.RoomKey + ":ADPhMod"
+	snapModkey := req.RoomKey + ":ADPhMod"
 	go func() {
 		if _, err := (wkbox).GetPara(&snapModkey, &snapMod); err != nil {
 			log.Println(err)
@@ -95,18 +95,28 @@ func (this *ULZGameDuelServiceBackend) ADPhaseConfirm(ctx context.Context, req *
 		}
 		wg.Done()
 	}()
+	var phaseInst pb.PhaseSnapMod
+	go func() {
+		tmpKey := req.RoomKey + ":PhaseState"
+		if _, err := wkbox.GetPara(&tmpKey, &phaseInst); err != nil {
+			log.Println(err)
+			errCh <- status.Errorf(codes.Internal, err.Error())
+		}
+		wg.Done()
+	}()
+
 	// check grep data error
 	if errRes := <-errCh; errRes != nil {
 		return nil, errRes
 	}
 
 	//  attack phase
-	if req.CurrentPhase != snapMod.EventPhase {
+	if req.CurrentPhase != phaseInst.EventPhase {
 		return nil, status.Error(codes.InvalidArgument, "AD_PHASE:InvaildPhase")
 	}
 	// FirstAttack = Host & CurrPhase = Host  -> Host is First-Attack
-	isAttack := (snapMod.EventPhase == pb.EventHookPhase_attack_card_drop_phase)
-	isDefence := (snapMod.EventPhase == pb.EventHookPhase_defence_card_drop_phase)
+	isAttack := (phaseInst.EventPhase == pb.EventHookPhase_attack_card_drop_phase)
+	isDefence := (phaseInst.EventPhase == pb.EventHookPhase_defence_card_drop_phase)
 	// snapMod.FirstAttack == snapMod.CurrPhase -> attack
 	// snapMod.FirstAttack != snapMod.CurrPhase -> defence
 	// incomePhase := (snapMod.FirstAttack == snapMod.CurrAttacker)
@@ -119,7 +129,7 @@ func (this *ULZGameDuelServiceBackend) ADPhaseConfirm(ctx context.Context, req *
 			log.Println(err)
 			return nil, status.Errorf(codes.Internal, err.Error())
 		}
-		go this.attackPhaseHandle(&returner, &snapMod)
+		go this.attackPhaseHandle(&req.RoomKey, &snapMod, &phaseInst)
 
 		// this return notice the sender the process is ongoing
 		// sender need to wait broadcast to move next phase
@@ -131,7 +141,7 @@ func (this *ULZGameDuelServiceBackend) ADPhaseConfirm(ctx context.Context, req *
 			log.Println(err)
 			return nil, status.Errorf(codes.Internal, err.Error())
 		}
-		go this.defencePhaseHandle(&returner, &snapMod)
+		go this.defencePhaseHandle(&req.RoomKey, &snapMod, &phaseInst)
 
 		// this return notice the sender the process is ongoing
 		// sender need to wait broadcast to move next phase
@@ -153,17 +163,44 @@ func (this *ULZGameDuelServiceBackend) ADPhaseResult(ctx context.Context, req *p
 		log.Printf("AtkDef-Phase-Result took %s", elapsed)
 	}()
 
-	var snapModkey = req.RoomKey + ":ADPhMod"
 	var snapMod pb.ADPhaseSnapMod
-	if _, err := (wkbox).GetPara(&snapModkey, &snapMod); err != nil {
-		log.Println(err)
-		return nil, status.Errorf(codes.Internal, err.Error())
+	snapModkey := req.RoomKey + snapMod.RdsKeyName()
+
+	var stateMod pb.PhaseSnapMod
+	stateModkey := req.RoomKey + stateMod.RdsKeyName()
+
+	errCh := make(chan error)
+	wg := sync.WaitGroup{}
+	wg.Add(2)
+	go func() {
+		if _, err := (wkbox).GetPara(&snapModkey, &snapMod); err != nil {
+			log.Println(err)
+			errCh <- status.Errorf(codes.Internal, err.Error())
+		}
+		wg.Done()
+	}()
+	go func() {
+		if _, err := (wkbox).GetPara(&stateModkey, &stateMod); err != nil {
+			log.Println(err)
+			errCh <- status.Errorf(codes.Internal, err.Error())
+		}
+		wg.Done()
+	}()
+	wg.Wait()
+	if err := <-errCh; err != nil {
+		return nil, err
 	}
+
 	// return nil, status.Error(codes.Unimplemented, "AD_PHASE_RESULT")
 	side := snapMod.CurrAttacker
 	var pt int32 = 0
+	if stateMod.EventPhase != req.CurrentPhase {
+		return nil, status.Error(codes.InvalidArgument, "AD_PHASE:InvaildPhase")
+	}
+
 	if snapMod.EventPhase == pb.EventHookPhase_attack_card_drop_phase {
 		side = snapMod.CurrAttacker
+		// Attack-pt
 		pt = snapMod.AttackVal
 	} else {
 		if snapMod.CurrAttacker == pb.PlayerSide_HOST {
@@ -171,18 +208,33 @@ func (this *ULZGameDuelServiceBackend) ADPhaseResult(ctx context.Context, req *p
 		} else {
 			side = pb.PlayerSide_HOST
 		}
+		// Deference-pt
 		pt = snapMod.DefenceVal
 	}
 
-	if req.Side == pb.PlayerSide_HOST && !req.IsWatcher {
-		snapMod.IsHostReady = true
-	} else if req.Side == pb.PlayerSide_DUELER && !req.IsWatcher {
-		snapMod.IsDuelReady = true
-	}
+	go func() {
+		if req.Side == pb.PlayerSide_HOST && !req.IsWatcher {
+			stateMod.IsHostReady = true
+		} else if req.Side == pb.PlayerSide_DUELER && !req.IsWatcher {
+			stateMod.IsDuelReady = true
+		}
+		go (wkbox).SetPara(&stateModkey, stateMod)
 
-	if snapMod.IsHostReady && snapMod.IsDuelReady {
-		// go this.moveNextPhase()
-	}
+		if stateMod.IsHostReady && stateMod.IsDuelReady {
+			go this.BroadCast(&pb.GDBroadcastResp{
+				RoomKey:      req.RoomKey,
+				Msg:          fmt.Sprintf("AD_PHASE:ACK_Both_SideResolve:"),
+				Command:      pb.CastCmd_GET_MOVE_PHASE_RESULT,
+				CurrentPhase: pb.EventHookPhase_attack_card_drop_phase,
+				PhaseHook:    pb.EventHookType_Proxy,
+			})
+			wkbox1 := this.searchAliveClient()
+			var gamDT pb.GameDataSet
+			wkbox1.GetPara(&req.RoomKey, &gamDT)
+			gamDT.HookType = pb.EventHookType_After
+			go this.moveNextPhase(&gamDT, &stateMod)
+		}
+	}()
 
 	return &pb.GDADResultResp{
 		RoomKey:      req.RoomKey,
@@ -194,55 +246,4 @@ func (this *ULZGameDuelServiceBackend) ADPhaseResult(ctx context.Context, req *p
 }
 func (this *ULZGameDuelServiceBackend) ADPhaseDiceResult(context.Context, *pb.GDGetInfoReq) (*pb.GDADDiceResult, error) {
 	return nil, status.Error(codes.Unimplemented, "AD_PHASE_DICE_RESULT")
-}
-
-func (this *ULZGameDuelServiceBackend) attackPhaseHandle(gameDS *pb.GameDataSet, snapMod *pb.ADPhaseSnapMod) {
-	// do effect calculate
-	result := 0
-	// do update
-	wkbox := this.searchAliveClient()
-	snapMod.AttackVal = int32(result)
-	snapMod.IsProcessed = true
-	var snapModkey = gameDS.RoomKey + ":ADPhMod"
-	if _, err := (wkbox).SetPara(&snapModkey, snapMod); err != nil {
-		log.Println(err)
-	}
-
-	// send ok message
-	go this.BroadCast(&gameDS.RoomKey, &snapModkey, &pb.GDBroadcastResp{
-		RoomKey:      gameDS.RoomKey,
-		Msg:          fmt.Sprintf("AD_PHASE:ATK_RESULT:", result),
-		Command:      pb.CastCmd_GET_ATK_PHASE_RESULT,
-		Side:         snapMod.CurrAttacker,
-		CurrentPhase: pb.EventHookPhase_attack_card_drop_phase,
-		PhaseHook:    pb.EventHookType_Proxy,
-	})
-
-}
-
-func (this *ULZGameDuelServiceBackend) defencePhaseHandle(gameDS *pb.GameDataSet, snapMod *pb.ADPhaseSnapMod) {
-	// do effect calculate
-	result := 0
-	// do update
-	wkbox := this.searchAliveClient()
-	snapMod.AttackVal = int32(result)
-	var snapModkey = gameDS.RoomKey + ":ADPhMod"
-	if _, err := (wkbox).SetPara(&snapModkey, snapMod); err != nil {
-		log.Println(err)
-	}
-	// send ok message
-	side := snapMod.CurrAttacker
-	if side == pb.PlayerSide_HOST {
-		side = pb.PlayerSide_DUELER
-	} else {
-		side = pb.PlayerSide_HOST
-	}
-	go this.BroadCast(&gameDS.RoomKey, &snapModkey, &pb.GDBroadcastResp{
-		RoomKey:      gameDS.RoomKey,
-		Msg:          fmt.Sprintf("AD_PHASE:DEF_RESULT:", result),
-		Command:      pb.CastCmd_GET_DEF_PHASE_RESULT,
-		Side:         side,
-		CurrentPhase: pb.EventHookPhase_defence_card_drop_phase,
-		PhaseHook:    pb.EventHookType_Proxy,
-	})
 }
