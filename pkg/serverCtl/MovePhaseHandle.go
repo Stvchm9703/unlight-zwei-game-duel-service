@@ -15,7 +15,7 @@ import (
 
 func (this *ULZGameDuelServiceBackend) movePhaseHandle(roomKey *string, moveMod *pb.MovePhaseSnapMod, stateMod *pb.PhaseSnapMod) {
 	// go to request the move result
-
+	// SECTION: skill-calculation
 	// do effect calculate
 	result := 0
 	// do update

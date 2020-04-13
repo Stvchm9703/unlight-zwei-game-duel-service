@@ -145,7 +145,7 @@ message SkillSet {
     int32                       pow                     = 3;
     string                      cond_string             = 4;
     repeated SkillCardCond      cond_card               = 5;
-    RangeType                   cond_range              = 6;
+    repeated RangeType          cond_range              = 6;
 }
  enum    SignEq {
     EQUAL                       = 0;

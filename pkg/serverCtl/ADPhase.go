@@ -244,6 +244,8 @@ func (this *ULZGameDuelServiceBackend) ADPhaseResult(ctx context.Context, req *p
 	}, nil
 
 }
+
 func (this *ULZGameDuelServiceBackend) ADPhaseDiceResult(context.Context, *pb.GDGetInfoReq) (*pb.GDADDiceResult, error) {
+	//
 	return nil, status.Error(codes.Unimplemented, "AD_PHASE_DICE_RESULT")
 }

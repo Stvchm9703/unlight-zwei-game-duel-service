@@ -10,6 +10,7 @@ import (
 
 func (this *ULZGameDuelServiceBackend) attackPhaseHandle(roomKey *string, snapMod *pb.ADPhaseSnapMod, phaseMod *pb.PhaseSnapMod) {
 	// do effect calculate
+	// SECTION: skill-calculation
 	result := 0
 	// do update
 	wkbox := this.searchAliveClient()
@@ -33,6 +34,7 @@ func (this *ULZGameDuelServiceBackend) attackPhaseHandle(roomKey *string, snapMo
 
 func (this *ULZGameDuelServiceBackend) defencePhaseHandle(roomKey *string, snapMod *pb.ADPhaseSnapMod, phaseMod *pb.PhaseSnapMod) {
 	// do effect calculate
+	// SECTION: skill-calculation
 	result := 0
 	// do update
 	wkbox := this.searchAliveClient()

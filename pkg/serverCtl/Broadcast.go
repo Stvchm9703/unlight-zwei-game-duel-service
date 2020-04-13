@@ -71,7 +71,7 @@ func serveWs(rsb *ULZGameDuelServiceBackend, hub *ws.SocketHub, c *gin.Context) 
 	fmt.Println(c.Param("roomId"))
 	reqKey := c.Param("roomId")
 
-	var tmp pb.Room
+	var tmp pb.GameDataSet
 	wkbox := rsb.searchAliveClient()
 	if _, err := wkbox.GetPara(&reqKey, &tmp); err != nil {
 		c.AbortWithStatus(412)
