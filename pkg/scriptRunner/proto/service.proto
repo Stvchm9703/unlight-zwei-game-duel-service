@@ -1,0 +1,21 @@
+syntax  =   "proto3";
+import      "message.proto";
+// import      "common.proto";
+// import      "Data.proto";
+
+package     ULZProto;
+option go_package               = "proto";
+option csharp_namespace         = "ULZAsset.ProtoMod";
+// ANCHOR: service-func for SkillEffectService
+// SECTION: service.proto
+service SkillEffectService {
+//  Basic Server Function
+    rpc SkillInstCalc       (SESkillCalReq)             returns (SESkillCalResp);
+    rpc SkillCalculate      (SESkillCalReq)             returns (SESkillCalResp);
+    rpc EffectCalculate     (SEEffectCalReq)            returns (SEEffectCalResp);
+    rpc DiceCalculate       (SEDiceCalReq)              returns (SEDiceCalResp);
+    
+}
+
+// !SECTION: service.proto
+
