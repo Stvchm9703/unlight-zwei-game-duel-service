@@ -62,7 +62,13 @@ import (
  *
  */
 
-func (this *ULZGameDuelServiceBackend) ADPhaseConfirm(ctx context.Context, req *pb.GDADConfirmReq) (*pb.Empty, error) {
+func (this *ULZGameDuelServiceBackend) ADPhaseConfirm(
+	ctx context.Context,
+	req *pb.GDADConfirmReq,
+) (
+	*pb.Empty,
+	error,
+) {
 	cm.PrintReqLog(ctx, "AtkDef-Phase-Confirm", req)
 	start := time.Now()
 	this.mu.Lock()
@@ -76,8 +82,10 @@ func (this *ULZGameDuelServiceBackend) ADPhaseConfirm(ctx context.Context, req *
 
 	// get data in routine
 	wg := sync.WaitGroup{}
-	wg.Add(3)
+	wg.Add(4)
 	errCh := make(chan error)
+
+	// gameSet
 	var returner pb.GameDataSet
 	go func() {
 		if _, err := (wkbox).GetPara(&req.RoomKey, &returner); err != nil {
@@ -86,8 +94,10 @@ func (this *ULZGameDuelServiceBackend) ADPhaseConfirm(ctx context.Context, req *
 		}
 		wg.Done()
 	}()
+
+	// ADPhaseSnapMod
 	var snapMod pb.ADPhaseSnapMod
-	snapModkey := req.RoomKey + ":ADPhMod"
+	snapModkey := req.RoomKey + snapMod.RdsKeyName()
 	go func() {
 		if _, err := (wkbox).GetPara(&snapModkey, &snapMod); err != nil {
 			log.Println(err)
@@ -95,15 +105,30 @@ func (this *ULZGameDuelServiceBackend) ADPhaseConfirm(ctx context.Context, req *
 		}
 		wg.Done()
 	}()
+
+	// PhaseSnapMod
 	var phaseInst pb.PhaseSnapMod
 	go func() {
-		tmpKey := req.RoomKey + ":PhaseState"
+		tmpKey := req.RoomKey + phaseInst.RdsKeyName()
 		if _, err := wkbox.GetPara(&tmpKey, &phaseInst); err != nil {
 			log.Println(err)
 			errCh <- status.Errorf(codes.Internal, err.Error())
 		}
 		wg.Done()
 	}()
+
+	// EffectNodeSnapMod
+	var effectNode pb.EffectNodeSnapMod
+	go func() {
+		tmpKey := req.RoomKey + effectNode.RdsKeyName()
+		if _, err := wkbox.GetPara(&tmpKey, &phaseInst); err != nil {
+			log.Println(err)
+			errCh <- status.Errorf(codes.Internal, err.Error())
+		}
+		wg.Done()
+	}()
+
+	wg.Wait()
 
 	// check grep data error
 	if errRes := <-errCh; errRes != nil {
@@ -129,7 +154,13 @@ func (this *ULZGameDuelServiceBackend) ADPhaseConfirm(ctx context.Context, req *
 			log.Println(err)
 			return nil, status.Errorf(codes.Internal, err.Error())
 		}
-		go this.attackPhaseHandle(&req.RoomKey, &snapMod, &phaseInst)
+		go this.attackPhaseHandle(
+			&req.RoomKey,
+			&returner,
+			&snapMod,
+			&phaseInst,
+			&effectNode,
+		)
 
 		// this return notice the sender the process is ongoing
 		// sender need to wait broadcast to move next phase
@@ -141,12 +172,16 @@ func (this *ULZGameDuelServiceBackend) ADPhaseConfirm(ctx context.Context, req *
 			log.Println(err)
 			return nil, status.Errorf(codes.Internal, err.Error())
 		}
-		go this.defencePhaseHandle(&req.RoomKey, &snapMod, &phaseInst)
-
+		go this.defencePhaseHandle(
+			&req.RoomKey,
+			&returner,
+			&snapMod,
+			&phaseInst,
+			&effectNode,
+		)
 		// this return notice the sender the process is ongoing
 		// sender need to wait broadcast to move next phase
 		return &pb.Empty{}, nil
-
 	}
 	return nil, status.Error(codes.Unimplemented, "AD_PHASE_CONFIRM")
 }

@@ -33,7 +33,7 @@ func SetLog(path string) io.Writer {
 	return wrt
 }
 
-func PrintReqLog(ctx context.Context, methodAddr string, req interface{}) {
+func PrintReqLog(ctx context.Context, methodAddr string, req ...interface{}) {
 	if DebugTestRun {
 		log.Printf("\n -\tctx:\t%#v \n -\tmethodAddr:\t%#v \n -\tReqInfo:\t%#v\n", ctx, methodAddr, req)
 	}

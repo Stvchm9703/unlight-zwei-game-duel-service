@@ -4,6 +4,7 @@ import (
 	// _ "ULZGameDuelService"
 	cm "ULZGameDuelService/pkg/common"
 	cf "ULZGameDuelService/pkg/config"
+	sr "ULZGameDuelService/pkg/scriptRunner"
 	rd "ULZGameDuelService/pkg/store/redis"
 	ws "ULZGameDuelService/pkg/websocket"
 	pb "ULZGameDuelService/proto"
@@ -20,11 +21,11 @@ var _ pb.GameDuelServiceServer = (*ULZGameDuelServiceBackend)(nil)
 //
 type ULZGameDuelServiceBackend struct {
 	// pb.ULZGameDuelServiceServer
-	mu      *sync.Mutex
-	CoreKey string
-	redhdlr []*rd.RdsCliBox
-	// roomStream map[string](*RoomStreamBox)
-	castServer *ws.SocketHub
+	mu          *sync.Mutex
+	CoreKey     string
+	redhdlr     []*rd.RdsCliBox
+	castServer  *ws.SocketHub
+	skillClient *sr.SkillEffectSvcClient
 }
 type RoomStreamBox struct {
 	clientConn map[string]*pb.GameDuelService_ServerBroadcastServer
@@ -45,13 +46,13 @@ func New(conf *cf.ConfTmp) *ULZGameDuelServiceBackend {
 			rdfl = append(rdfl, rdf)
 		}
 	}
-
+	skc := sr.ClientListInit("ScriptRunner", conf.EffectCalcService)
 	g := ULZGameDuelServiceBackend{
-		CoreKey: ck,
-		mu:      &sync.Mutex{},
-		redhdlr: rdfl,
-		// roomStream: make(map[string](*RoomStreamBox)),
-		castServer: ws.NewHub(),
+		CoreKey:     ck,
+		mu:          &sync.Mutex{},
+		redhdlr:     rdfl,
+		castServer:  ws.NewHub(),
+		skillClient: skc,
 	}
 	// g.InitDB(&conf.Database)
 	return &g
@@ -80,78 +81,7 @@ func (this *ULZGameDuelServiceBackend) Shutdown() {
 // PrintReqLog
 
 // ----------------------------------------------------------------------------------------------------
-//
-
-// func (rm *ULZGameDuelServiceBackend) GetStream(roomKey *string, userId *string) *pb.GameDuelService_ServerBroadcastServer {
-// 	a, ok := rm.roomStream[*roomKey]
-// 	b, ok := a.clientConn[*userId]
-// 	if ok {
-// 		return b
-// 	}
-// 	return nil
-// }
-
-// func (rm *ULZGameDuelServiceBackend) AddStream(roomKey *string, userId *string, stream *pb.GameDuelService_ServerBroadcastServer) (bool, error) {
-// 	// _, ok := rm.bc_stream[user_id]
-// 	fmt.Println("RoomService.AddStream")
-// 	fmt.Println(rm.roomStream)
-// 	a, ok := rm.roomStream[*roomKey]
-// 	if !ok {
-// 		return false, errors.New("ROOM_NOT_EXIST")
-// 	}
-
-// 	_, ok = a.clientConn[*userId]
-// 	if ok {
-// 		return false, errors.New("USER_EXIST")
-// 	}
-// 	a.clientConn[*userId] = stream
-// 	return true, nil
-// }
-
-// func (rm *ULZGameDuelServiceBackend) DelStream(roomKey *string, userId *string) (bool, error) {
-// 	log.Println("Del Stream:")
-// 	a, ok := rm.roomStream[*roomKey]
-// 	if !ok {
-// 		return false, errors.New("ROOM_NOT_EXIST")
-// 	}
-// 	if a.clientConn[*userId] != nil {
-// 		*(a.clientConn[*userId]) = nil
-// 		delete(a.clientConn, *userId)
-// 		return true, nil
-// 	}
-// 	return false, errors.New("StreamNotExist")
-// }
-
-// func (rm *ULZGameDuelServiceBackend) BroadCast(roomkey *string, from *string, message *pb.GDBroadcastResp) error {
-// 	log.Println("BS!", message)
-// 	rmb, ok := rm.roomStream[*roomkey]
-// 	if !ok {
-// 		log.Println("room not exist")
-// 		return errors.New("ROOM_NOT_EXIST")
-// 	}
-// 	for k, v := range rmb.clientConn {
-// 		if k != *from {
-// 			(*v).Send(message)
-// 		}
-// 	}
-// 	return nil
-// }
-
-// // ---------------------------------------------------------------------------------------------
-// // RoomStreamBox Controlling
-
-// func (rm *RoomStreamBox) ClearAll() {
-// 	log.Println("ClearAll Proc")
-// 	// for _, vc := range rm.clientConn {
-// 	// 	// (*vc).Send(cm.MsgSystShutdown(&rm.key))
-// 	// }
-// 	for k := range rm.clientConn {
-// 		*(rm.clientConn[k]) = nil
-// 		delete(rm.clientConn, k)
-// 	}
-// 	return
-// }
-
+//	Skill-client
 // -------------------------------------------------------------------------
 
 func (b *ULZGameDuelServiceBackend) searchAliveClient() *rd.RdsCliBox {

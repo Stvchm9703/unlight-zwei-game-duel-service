@@ -30,6 +30,7 @@ func (this *ULZGameDuelServiceBackend) MovePhaseConfirm(ctx context.Context, req
 	// get data -----
 	wg := sync.WaitGroup{}
 	wg.Add(2)
+	// MovePhaseSnapMod
 	var snapMove pb.MovePhaseSnapMod
 	var snapMovekey = req.RoomKey + snapMove.RdsKeyName()
 	errch := make(chan error)
@@ -40,7 +41,7 @@ func (this *ULZGameDuelServiceBackend) MovePhaseConfirm(ctx context.Context, req
 		}
 		wg.Done()
 	}()
-
+	// PhaseSnapMod
 	var snapPhase pb.PhaseSnapMod
 	snapPhasekey := req.RoomKey + snapPhase.RdsKeyName()
 	go func() {
@@ -50,6 +51,8 @@ func (this *ULZGameDuelServiceBackend) MovePhaseConfirm(ctx context.Context, req
 		}
 		wg.Done()
 	}()
+
+	// var eventNode pb.EventSnapMod
 
 	wg.Wait()
 
@@ -72,20 +75,39 @@ func (this *ULZGameDuelServiceBackend) MovePhaseConfirm(ctx context.Context, req
 		snapMove.HostOpt = req.MoveOpt
 		snapMove.HostTrigSkl = req.TriggerSkl
 		snapMove.HostCard = req.UpdateCard
+		// snapPhase
+		snapPhase.IsHostReady = true
+
 	} else if req.Side == pb.PlayerSide_DUELER {
 		snapMove.DuelVal = req.Point
 		snapMove.DuelOpt = req.MoveOpt
 		snapMove.DuelTrigSkl = req.TriggerSkl
 		snapMove.DuelCard = req.UpdateCard
+		// snapPhase
+		snapPhase.IsDuelReady = true
 	}
 	// do snap-mod update
 	// wg.Add(1)
+
+	wg.Add(2)
 	go func() {
 		if _, err := (wkbox).SetPara(&snapMovekey, snapMove); err != nil {
 			log.Println(err)
 			errch <- status.Errorf(codes.Internal, err.Error())
 		}
+		wg.Done()
 	}()
+	go func() {
+		if _, err := (wkbox).SetPara(&snapPhasekey, snapPhase); err != nil {
+			log.Println(err)
+			errch <- status.Errorf(codes.Internal, err.Error())
+		}
+		wg.Done()
+	}()
+	wg.Wait()
+	if err := <-errch; err != nil {
+		return nil, err
+	}
 
 	// broadcast ok ?
 	// side := req.Side.String()
@@ -100,8 +122,6 @@ func (this *ULZGameDuelServiceBackend) MovePhaseConfirm(ctx context.Context, req
 	})
 
 	if snapPhase.IsHostReady && snapPhase.IsDuelReady {
-		// snapPhase.EventPhase = pb.EventHookPhase_move_card_drop_phase
-		// snapPhase.HookType = pb.EventHookType_After
 		go this.BroadCast(&pb.GDBroadcastResp{
 			RoomKey:      req.RoomKey,
 			Msg:          "Both Ready",
@@ -113,15 +133,11 @@ func (this *ULZGameDuelServiceBackend) MovePhaseConfirm(ctx context.Context, req
 		// go store before move next
 
 		// both-ready; then move-next phase
-
 		go func() {
 			mbox := this.searchAliveClient()
 			var gameDt pb.GameDataSet
 			mbox.GetPara(&req.RoomKey, &gameDt)
 			gameDt.HookType = pb.EventHookType_After
-
-			// var gameDt
-
 			mbox.Preserve(false)
 			this.moveNextPhase(&gameDt, &snapPhase)
 		}()
