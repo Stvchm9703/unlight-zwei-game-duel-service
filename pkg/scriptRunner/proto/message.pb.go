@@ -4,9 +4,11 @@
 package proto
 
 import (
+	dtpb "ULZGameDuelService/proto"
 	fmt "fmt"
-	proto "github.com/golang/protobuf/proto"
 	math "math"
+
+	proto "github.com/golang/protobuf/proto"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -24,13 +26,13 @@ const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 // SECTION: message.proto
 // -------------------------------------------------------------
 type SESkillCalReq struct {
-	IncomeCard           []*EventCard  `protobuf:"bytes,1,rep,name=income_card,json=incomeCard,proto3" json:"income_card,omitempty"`
-	Feat                 []*SkillSet   `protobuf:"bytes,2,rep,name=feat,proto3" json:"feat,omitempty"`
-	FromCli              string        `protobuf:"bytes,3,opt,name=from_cli,json=fromCli,proto3" json:"from_cli,omitempty"`
-	TargType             EventCardType `protobuf:"varint,4,opt,name=targ_type,json=targType,proto3,enum=ULZProto.EventCardType" json:"targ_type,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}      `json:"-"`
-	XXX_unrecognized     []byte        `json:"-"`
-	XXX_sizecache        int32         `json:"-"`
+	IncomeCard           []*dtpb.EventCard  `protobuf:"bytes,1,rep,name=income_card,json=incomeCard,proto3" json:"income_card,omitempty"`
+	Feat                 []*dtpb.SkillSet   `protobuf:"bytes,2,rep,name=feat,proto3" json:"feat,omitempty"`
+	FromCli              string             `protobuf:"bytes,3,opt,name=from_cli,json=fromCli,proto3" json:"from_cli,omitempty"`
+	TargType             dtpb.EventCardType `protobuf:"varint,4,opt,name=targ_type,json=targType,proto3,enum=ULZProto.EventCardType" json:"targ_type,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}           `json:"-"`
+	XXX_unrecognized     []byte             `json:"-"`
+	XXX_sizecache        int32              `json:"-"`
 }
 
 func (m *SESkillCalReq) Reset()         { *m = SESkillCalReq{} }
@@ -58,14 +60,14 @@ func (m *SESkillCalReq) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_SESkillCalReq proto.InternalMessageInfo
 
-func (m *SESkillCalReq) GetIncomeCard() []*EventCard {
+func (m *SESkillCalReq) GetIncomeCard() []*dtpb.EventCard {
 	if m != nil {
 		return m.IncomeCard
 	}
 	return nil
 }
 
-func (m *SESkillCalReq) GetFeat() []*SkillSet {
+func (m *SESkillCalReq) GetFeat() []*dtpb.SkillSet {
 	if m != nil {
 		return m.Feat
 	}
@@ -79,20 +81,20 @@ func (m *SESkillCalReq) GetFromCli() string {
 	return ""
 }
 
-func (m *SESkillCalReq) GetTargType() EventCardType {
+func (m *SESkillCalReq) GetTargType() dtpb.EventCardType {
 	if m != nil {
 		return m.TargType
 	}
-	return EventCardType_NULL
+	return dtpb.EventCardType_NULL
 }
 
 type SESkillCalResp struct {
-	ResultVal            int32           `protobuf:"varint,1,opt,name=result_val,json=resultVal,proto3" json:"result_val,omitempty"`
-	EffectResult         []*EffectResult `protobuf:"bytes,2,rep,name=effect_result,json=effectResult,proto3" json:"effect_result,omitempty"`
-	TargType             EventCardType   `protobuf:"varint,3,opt,name=targ_type,json=targType,proto3,enum=ULZProto.EventCardType" json:"targ_type,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
-	XXX_unrecognized     []byte          `json:"-"`
-	XXX_sizecache        int32           `json:"-"`
+	ResultVal            int32                `protobuf:"varint,1,opt,name=result_val,json=resultVal,proto3" json:"result_val,omitempty"`
+	EffectResult         []*dtpb.EffectResult `protobuf:"bytes,2,rep,name=effect_result,json=effectResult,proto3" json:"effect_result,omitempty"`
+	TargType             dtpb.EventCardType   `protobuf:"varint,3,opt,name=targ_type,json=targType,proto3,enum=ULZProto.EventCardType" json:"targ_type,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}             `json:"-"`
+	XXX_unrecognized     []byte               `json:"-"`
+	XXX_sizecache        int32                `json:"-"`
 }
 
 func (m *SESkillCalResp) Reset()         { *m = SESkillCalResp{} }
@@ -127,18 +129,18 @@ func (m *SESkillCalResp) GetResultVal() int32 {
 	return 0
 }
 
-func (m *SESkillCalResp) GetEffectResult() []*EffectResult {
+func (m *SESkillCalResp) GetEffectResult() []*dtpb.EffectResult {
 	if m != nil {
 		return m.EffectResult
 	}
 	return nil
 }
 
-func (m *SESkillCalResp) GetTargType() EventCardType {
+func (m *SESkillCalResp) GetTargType() dtpb.EventCardType {
 	if m != nil {
 		return m.TargType
 	}
-	return EventCardType_NULL
+	return dtpb.EventCardType_NULL
 }
 
 type SEDiceCalReq struct {
@@ -267,14 +269,14 @@ func (m *DiceResultSet) GetValue() []int32 {
 }
 
 type SEEffectCalReq struct {
-	Id                   string        `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	FromTime             *EffectTiming `protobuf:"bytes,2,opt,name=from_time,json=fromTime,proto3" json:"from_time,omitempty"`
-	ToTime               *EffectTiming `protobuf:"bytes,3,opt,name=to_time,json=toTime,proto3" json:"to_time,omitempty"`
-	GamesetInstant       *GameDataSet  `protobuf:"bytes,4,opt,name=gameset_instant,json=gamesetInstant,proto3" json:"gameset_instant,omitempty"`
-	FromCli              string        `protobuf:"bytes,5,opt,name=from_cli,json=fromCli,proto3" json:"from_cli,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}      `json:"-"`
-	XXX_unrecognized     []byte        `json:"-"`
-	XXX_sizecache        int32         `json:"-"`
+	Id                   string             `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	FromTime             *dtpb.EffectTiming `protobuf:"bytes,2,opt,name=from_time,json=fromTime,proto3" json:"from_time,omitempty"`
+	ToTime               *dtpb.EffectTiming `protobuf:"bytes,3,opt,name=to_time,json=toTime,proto3" json:"to_time,omitempty"`
+	GamesetInstant       *dtpb.GameDataSet  `protobuf:"bytes,4,opt,name=gameset_instant,json=gamesetInstant,proto3" json:"gameset_instant,omitempty"`
+	FromCli              string             `protobuf:"bytes,5,opt,name=from_cli,json=fromCli,proto3" json:"from_cli,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}           `json:"-"`
+	XXX_unrecognized     []byte             `json:"-"`
+	XXX_sizecache        int32              `json:"-"`
 }
 
 func (m *SEEffectCalReq) Reset()         { *m = SEEffectCalReq{} }
@@ -309,21 +311,21 @@ func (m *SEEffectCalReq) GetId() string {
 	return ""
 }
 
-func (m *SEEffectCalReq) GetFromTime() *EffectTiming {
+func (m *SEEffectCalReq) GetFromTime() *dtpb.EffectTiming {
 	if m != nil {
 		return m.FromTime
 	}
 	return nil
 }
 
-func (m *SEEffectCalReq) GetToTime() *EffectTiming {
+func (m *SEEffectCalReq) GetToTime() *dtpb.EffectTiming {
 	if m != nil {
 		return m.ToTime
 	}
 	return nil
 }
 
-func (m *SEEffectCalReq) GetGamesetInstant() *GameDataSet {
+func (m *SEEffectCalReq) GetGamesetInstant() *dtpb.GameDataSet {
 	if m != nil {
 		return m.GamesetInstant
 	}
@@ -338,15 +340,15 @@ func (m *SEEffectCalReq) GetFromCli() string {
 }
 
 type SEEffectCalResp struct {
-	Id                   string        `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	FromCli              string        `protobuf:"bytes,2,opt,name=from_cli,json=fromCli,proto3" json:"from_cli,omitempty"`
-	GamesetResult        *GameDataSet  `protobuf:"bytes,3,opt,name=gameset_result,json=gamesetResult,proto3" json:"gameset_result,omitempty"`
-	ResultInfo           []string      `protobuf:"bytes,4,rep,name=result_info,json=resultInfo,proto3" json:"result_info,omitempty"`
-	FromTime             *EffectTiming `protobuf:"bytes,5,opt,name=from_time,json=fromTime,proto3" json:"from_time,omitempty"`
-	ToTime               *EffectTiming `protobuf:"bytes,6,opt,name=to_time,json=toTime,proto3" json:"to_time,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}      `json:"-"`
-	XXX_unrecognized     []byte        `json:"-"`
-	XXX_sizecache        int32         `json:"-"`
+	Id                   string             `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	FromCli              string             `protobuf:"bytes,2,opt,name=from_cli,json=fromCli,proto3" json:"from_cli,omitempty"`
+	GamesetResult        *dtpb.GameDataSet  `protobuf:"bytes,3,opt,name=gameset_result,json=gamesetResult,proto3" json:"gameset_result,omitempty"`
+	ResultInfo           []string           `protobuf:"bytes,4,rep,name=result_info,json=resultInfo,proto3" json:"result_info,omitempty"`
+	FromTime             *dtpb.EffectTiming `protobuf:"bytes,5,opt,name=from_time,json=fromTime,proto3" json:"from_time,omitempty"`
+	ToTime               *dtpb.EffectTiming `protobuf:"bytes,6,opt,name=to_time,json=toTime,proto3" json:"to_time,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}           `json:"-"`
+	XXX_unrecognized     []byte             `json:"-"`
+	XXX_sizecache        int32              `json:"-"`
 }
 
 func (m *SEEffectCalResp) Reset()         { *m = SEEffectCalResp{} }
@@ -388,7 +390,7 @@ func (m *SEEffectCalResp) GetFromCli() string {
 	return ""
 }
 
-func (m *SEEffectCalResp) GetGamesetResult() *GameDataSet {
+func (m *SEEffectCalResp) GetGamesetResult() *dtpb.GameDataSet {
 	if m != nil {
 		return m.GamesetResult
 	}
@@ -402,14 +404,14 @@ func (m *SEEffectCalResp) GetResultInfo() []string {
 	return nil
 }
 
-func (m *SEEffectCalResp) GetFromTime() *EffectTiming {
+func (m *SEEffectCalResp) GetFromTime() *dtpb.EffectTiming {
 	if m != nil {
 		return m.FromTime
 	}
 	return nil
 }
 
-func (m *SEEffectCalResp) GetToTime() *EffectTiming {
+func (m *SEEffectCalResp) GetToTime() *dtpb.EffectTiming {
 	if m != nil {
 		return m.ToTime
 	}
