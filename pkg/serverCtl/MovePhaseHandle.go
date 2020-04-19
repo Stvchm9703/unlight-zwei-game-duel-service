@@ -95,15 +95,13 @@ func (this *ULZGameDuelServiceBackend) movePhaseHandle(
 		CurrentPhase: pb.EventHookPhase_attack_card_drop_phase,
 		PhaseHook:    pb.EventHookType_Proxy,
 	})
-}
 
+}
 func _effectCheckForMovePhase(gmSet *pb.GameDataSet, eflist *pb.EffectNodeSnapMod) {
 	fmt.Println("Start Filter effect")
 	// host current card
-	// hostCurrentCard :=
 	var hostCurrentEF pb.EffectResult
 	// duel current card
-	// duelCurrentCard := gmSet.DuelCurrCardKey
 	var duelCurrentEF pb.EffectResult
 
 	for _, v := range eflist.PendingEf {

@@ -43,7 +43,7 @@ message SEEffectCalReq {
     EffectTiming                to_time                     = 3;
     GameDataSet                 gameset_instant             = 4;
     string                      from_cli                    = 5;
-    //EffectCalcCase              case                        = 6;
+    string                      remark                      = 6;
 }
 
 message SEEffectCalResp{

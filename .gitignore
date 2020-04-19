@@ -13,3 +13,12 @@
 
 # Dependency directories (remove the comment below to include it)
 vendor/
+pkg/scriptRunner/proto/EventHookPhase.validator.pb.go
+pkg/scriptRunner/proto/EventHookPhase.proto
+pkg/scriptRunner/proto/EventHookPhase.pb.go
+pkg/scriptRunner/proto/Data.validator.pb.go
+pkg/scriptRunner/proto/Data.proto
+pkg/scriptRunner/proto/Data.pb.go
+pkg/scriptRunner/proto/common.validator.pb.go
+pkg/scriptRunner/proto/common.proto
+pkg/scriptRunner/proto/common.pb.go
