@@ -82,5 +82,15 @@ func (this *SEEffectCalResp) Validate() error {
 			return github_com_mwitkow_go_proto_validators.FieldError("GamesetResult", err)
 		}
 	}
+	if this.FromTime != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.FromTime); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("FromTime", err)
+		}
+	}
+	if this.ToTime != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.ToTime); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("ToTime", err)
+		}
+	}
 	return nil
 }
