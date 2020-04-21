@@ -11,7 +11,7 @@ import (
 	Cf "ULZGameDuelService/pkg/config"
 
 	wbs "ULZGameDuelService/pkg/serverCtl"
-	wb "ULZGameDuelService/pkg/serverCtlNoRedis"
+	// wb "ULZGameDuelService/pkg/serverCtlNoRedis"
 
 	"github.com/spf13/cobra"
 )
@@ -54,11 +54,7 @@ var runCmd = &cobra.Command{
 				cm.DebugTestRun = true
 			}
 			cm.Mode = runCMDInput.mode
-			if runCMDInput.noRedis {
-				wb.ServerMainProcess(configPoint)
-			} else {
-				wbs.ServerMainProcess(configPoint)
-			}
+			wbs.ServerMainProcess(configPoint)
 		} else {
 			panic(err)
 		}

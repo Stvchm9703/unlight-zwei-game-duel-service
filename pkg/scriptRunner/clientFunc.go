@@ -101,11 +101,16 @@ func (cli *SkillEffectSvcClient) SkillInstCalc(req *pb.SESkillCalReq) (*pb.SESki
 	fmt.Printf("Skill-Inst-Calc:resolve by %s\n", p.Addr)
 	return res, nil
 }
-func (cli *SkillEffectSvcClient) SkillInstCalcWrap(incomeCard []*dataPb.EventCard, feat []*dataPb.SkillSet, requestPhase string) (*int32, []*dataPb.EffectResult, error) {
+func (cli *SkillEffectSvcClient) SkillInstCalcWrap(
+	incomeCard []*dataPb.EventCard,
+	feat []*dataPb.SkillSet,
+	requestPhase dataPb.EventCardType,
+) (*int32, []*dataPb.EffectResult, error) {
 	res, err := cli.SkillInstCalc(&pb.SESkillCalReq{
 		IncomeCard: incomeCard,
 		Feat:       feat,
-		FromCli:    fmt.Sprintf("%s:%s", cli.clientName, requestPhase),
+		FromCli:    cli.clientName,
+		TargType:   requestPhase,
 	})
 	return &res.ResultVal, res.EffectResult, err
 }
@@ -134,11 +139,16 @@ func (cli *SkillEffectSvcClient) SkillCalculate(req *pb.SESkillCalReq) (*pb.SESk
 	fmt.Printf("Skill-Inst-Calc:resolve by %s\n", p.Addr)
 	return res, nil
 }
-func (cli *SkillEffectSvcClient) SkillCalculateWrap(incomeCard []*dataPb.EventCard, feat []*dataPb.SkillSet, requestPhase string) (*int32, []*dataPb.EffectResult, error) {
+func (cli *SkillEffectSvcClient) SkillCalculateWrap(
+	incomeCard []*dataPb.EventCard,
+	feat []*dataPb.SkillSet,
+	requestPhase dataPb.EventCardType,
+) (*int32, []*dataPb.EffectResult, error) {
 	res, err := cli.SkillCalculate(&pb.SESkillCalReq{
 		IncomeCard: incomeCard,
 		Feat:       feat,
-		FromCli:    fmt.Sprintf("%s:%s", cli.clientName, requestPhase),
+		FromCli:    cli.clientName,
+		TargType:   requestPhase,
 	})
 	return &res.ResultVal, res.EffectResult, err
 }

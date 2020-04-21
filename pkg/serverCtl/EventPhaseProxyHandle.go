@@ -8,8 +8,13 @@ import (
 )
 
 // Handle Proxy phase
-func (this *ULZGameDuelServiceBackend) proxyHandle(gameSet *pb.GameDataSet) {
-	switch gameSet.EventPhase {
+func (this *ULZGameDuelServiceBackend) proxyHandle(
+	gameSet *pb.GameDataSet,
+	phaseMod *pb.PhaseSnapMod,
+	effectMod *pb.EffectNodeSnapMod,
+	snapMod ...interface{},
+) {
+	switch phaseMod.EventPhase {
 	case pb.EventHookPhase_gameset_start:
 		gamesetStart(gameSet)
 		break
@@ -42,13 +47,7 @@ func (this *ULZGameDuelServiceBackend) proxyHandle(gameSet *pb.GameDataSet) {
 	case pb.EventHookPhase_gameset_end:
 	}
 	fmt.Println("Hello world")
-	go func() {
-		wkbox := this.searchAliveClient()
-		if _, err := wkbox.SetPara(&gameSet.RoomKey, gameSet); err != nil {
-			fmt.Println(err)
-		}
-		wkbox.Preserve(false)
-	}()
+
 	return
 }
 

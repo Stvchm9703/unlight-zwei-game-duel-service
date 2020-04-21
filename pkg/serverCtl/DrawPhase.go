@@ -93,7 +93,7 @@ func (this *ULZGameDuelServiceBackend) DrawPhaseConfirm(ctx context.Context, req
 			if _, err := wkbox.SetPara(&req.RoomKey, &gameSet); err != nil {
 				errch <- status.Error(codes.Internal, err.Error())
 			} else {
-				this.phaseTrigEf(&gameSet)
+				// this.phaseTrigEf(&gameSet)
 			}
 		}()
 		if err := <-errch; err != nil {

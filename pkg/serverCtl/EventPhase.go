@@ -135,18 +135,23 @@ func (this *ULZGameDuelServiceBackend) EventPhaseResult(context.Context, *pb.GDG
 	return nil, status.Error(codes.Unimplemented, "EVENT_PHASE_RESULT")
 }
 
-func (this *ULZGameDuelServiceBackend) moveNextPhase(gameDS *pb.GameDataSet, phaseMod *pb.PhaseSnapMod) {
-	switch gameDS.HookType {
+func (this *ULZGameDuelServiceBackend) moveNextPhase(
+	gameDS *pb.GameDataSet,
+	phaseMod *pb.PhaseSnapMod,
+	effectMod *pb.EffectNodeSnapMod,
+	snapMod ...interface{},
+) {
+	switch phaseMod.HookType {
 	case pb.EventHookType_Before, pb.EventHookType_After:
-		this.phaseTrigEf(gameDS)
+		// this.phaseTrigEf(gameDS, phaseMod, effectMod)
+		this.executeEffectNode(gameDS, phaseMod, effectMod)
 		break
 	case pb.EventHookType_Proxy:
-		this.proxyHandle(gameDS)
+		this.proxyHandle(gameDS, phaseMod, effectMod, snapMod)
 		break
 	}
 	// upshift the phase
-	this.upshiftPhase(gameDS)
-
+	this.upshiftPhase(gameDS, phaseMod, effectMod)
 }
 
 // point calculate
@@ -160,11 +165,15 @@ func pointCalcute(inst *int32, orig *int32, value *int32) {
 	}
 }
 
-func (this *ULZGameDuelServiceBackend) upshiftPhase(gameSet *pb.GameDataSet) (bool, error) {
+func (this *ULZGameDuelServiceBackend) upshiftPhase(
+	gameSet *pb.GameDataSet,
+	phaseMod *pb.PhaseSnapMod,
+	effectMod *pb.EffectNodeSnapMod,
+) (bool, error) {
 	fmt.Printf("current phase: %#v,\tcurrent hook: %#v ;\n", gameSet.EventPhase, gameSet.HookType)
 	// fmt.Printf("target phase: %#v ,\ttarget hook: %#v; \n", shiftPhase, shiftType)
 	// assigner := "upshiftPhaseHandler"
-
+	//=================================================================
 	// check dead char
 	isHostDead := (gameSet.HostCardDeck[gameSet.HostCurrCardKey].HpInst <= 0)
 	isDuelDead := (gameSet.DuelCardDeck[gameSet.DuelCurrCardKey].HpInst <= 0)
@@ -196,7 +205,7 @@ func (this *ULZGameDuelServiceBackend) upshiftPhase(gameSet *pb.GameDataSet) (bo
 
 	ChangeFlag := false
 	EndGameFlag := false
-	wg.Add(1)
+	wg.Add(2)
 	go func() {
 		if isHostDead && len(gameSet.HostCardDeck) > hostAllDead {
 			this.BroadCast(&pb.GDBroadcastResp{
@@ -234,55 +243,15 @@ func (this *ULZGameDuelServiceBackend) upshiftPhase(gameSet *pb.GameDataSet) (bo
 	if EndGameFlag {
 		gameSet.EventPhase = pb.EventHookPhase_gameset_end
 		gameSet.HookType = pb.EventHookType_Before
-		return true, nil
 	}
 	if ChangeFlag {
 		gameSet.EventPhase = pb.EventHookPhase_dead_chara_change_phase
 		gameSet.HookType = pb.EventHookType_Before
-		return true, nil
 	}
+	//=================================================================
 
 	// --------------------------------------------------
 	// start shift-next
-	if gameSet.HookType == pb.EventHookType_Before {
-		gameSet.HookType = pb.EventHookType_Proxy
-		return false, nil
-	} else if gameSet.HookType == pb.EventHookType_After {
-		gameSet.HookType = pb.EventHookType_Before
-		var nextEvent pb.EventHookPhase = gameSet.EventPhase
-		switch gameSet.EventPhase {
-		case pb.EventHookPhase_refill_action_card_phase:
-
-		case pb.EventHookPhase_move_card_drop_phase:
-			nextEvent = pb.EventHookPhase_determine_move_phase
-			break
-		case pb.EventHookPhase_determine_move_phase:
-			nextEvent = pb.EventHookPhase_finish_move_phase
-			break
-		case pb.EventHookPhase_finish_move_phase:
-			nextEvent = pb.EventHookPhase_attack_card_drop_phase
-			break
-
-		case pb.EventHookPhase_attack_card_drop_phase:
-			nextEvent = pb.EventHookPhase_defence_card_drop_phase
-			break
-		case pb.EventHookPhase_defence_card_drop_phase:
-			nextEvent = pb.EventHookPhase_determine_battle_point_phase
-			break
-		case pb.EventHookPhase_determine_battle_point_phase:
-			nextEvent = pb.EventHookPhase_battle_result_phase
-			break
-		case pb.EventHookPhase_battle_result_phase:
-			nextEvent = pb.EventHookPhase_damage_phase
-			break
-
-		case pb.EventHookPhase_change_initiative_phase:
-			nextEvent = pb.EventHookPhase_attack_card_drop_phase
-			break
-		default:
-			nextEvent++
-		}
-	}
 	return false, nil
 }
 
@@ -296,4 +265,82 @@ func isManualHandlePhase(in pb.EventHookPhase) bool {
 		return true
 	}
 	return false
+}
+
+func (this *ULZGameDuelServiceBackend) executeEffectNode(
+	gameSet *pb.GameDataSet,
+	stateMod *pb.PhaseSnapMod,
+	effectMod *pb.EffectNodeSnapMod,
+) (*pb.GameDataSet, error) {
+	nextPhase, nextType := upnextEventPhase(stateMod.EventPhase, stateMod.HookType)
+	gameSet1, err := this.skillClient.EffectCalculateWrap(
+		gameSet.RoomKey,
+		&pb.EffectTiming{
+			EventPhase: stateMod.EventPhase,
+			HookType:   stateMod.HookType,
+		},
+		&pb.EffectTiming{
+			EventPhase: nextPhase,
+			HookType:   nextType,
+		},
+		gameSet,
+	)
+	fmt.Printf("updated gameSet %#v \n err?: %v\n", gameSet1, err)
+	return gameSet1, err
+}
+
+func upnextEventPhase(
+	inPhase pb.EventHookPhase, inType pb.EventHookType,
+) (outPhase pb.EventHookPhase, outType pb.EventHookType) {
+	if inType == pb.EventHookType_Proxy {
+		outPhase = inPhase
+		outType = pb.EventHookType_After
+	} else if inType == pb.EventHookType_Before {
+		outPhase = inPhase
+		outType = pb.EventHookType_Proxy
+	} else if inType == pb.EventHookType_After {
+		outType = pb.EventHookType_Before
+		switch inPhase {
+		case pb.EventHookPhase_start_turn_phase:
+			outPhase = pb.EventHookPhase_refill_action_card_phase
+			break
+		case pb.EventHookPhase_refill_action_card_phase:
+			outPhase = pb.EventHookPhase_move_card_drop_phase
+			break
+		case pb.EventHookPhase_move_card_drop_phase:
+			outPhase = pb.EventHookPhase_determine_move_phase
+			break
+		case pb.EventHookPhase_determine_move_phase:
+			outPhase = pb.EventHookPhase_finish_move_phase
+			break
+		case pb.EventHookPhase_finish_move_phase:
+			outPhase = pb.EventHookPhase_attack_card_drop_phase
+			break
+		case pb.EventHookPhase_attack_card_drop_phase:
+			outPhase = pb.EventHookPhase_defence_card_drop_phase
+			break
+		case pb.EventHookPhase_defence_card_drop_phase:
+			outPhase = pb.EventHookPhase_determine_battle_point_phase
+			break
+		case pb.EventHookPhase_determine_battle_point_phase:
+			outPhase = pb.EventHookPhase_battle_result_phase
+			break
+		case pb.EventHookPhase_battle_result_phase:
+			outPhase = pb.EventHookPhase_damage_phase
+			break
+		case pb.EventHookPhase_dead_chara_change_phase:
+			outPhase = pb.EventHookPhase_determine_dead_chara_change_phase
+			break
+		case pb.EventHookPhase_determine_dead_chara_change_phase:
+			outPhase = pb.EventHookPhase_change_initiative_phase
+			break
+		case pb.EventHookPhase_change_initiative_phase:
+			outPhase = pb.EventHookPhase_attack_card_drop_phase
+			break
+
+		default:
+			outPhase = inPhase + 1
+		}
+	}
+	return
 }

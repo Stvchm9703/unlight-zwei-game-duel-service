@@ -6,8 +6,9 @@ package proto
 import (
 	dtpb "ULZGameDuelService/proto"
 	fmt "fmt"
-	proto "github.com/golang/protobuf/proto"
 	math "math"
+
+	proto "github.com/golang/protobuf/proto"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -27,11 +28,11 @@ const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 type SESkillCalReq struct {
 	IncomeCard           []*dtpb.EventCard  `protobuf:"bytes,1,rep,name=income_card,json=incomeCard,proto3" json:"income_card,omitempty"`
 	Feat                 []*dtpb.SkillSet   `protobuf:"bytes,2,rep,name=feat,proto3" json:"feat,omitempty"`
-	FromCli              string        `protobuf:"bytes,3,opt,name=from_cli,json=fromCli,proto3" json:"from_cli,omitempty"`
+	FromCli              string             `protobuf:"bytes,3,opt,name=from_cli,json=fromCli,proto3" json:"from_cli,omitempty"`
 	TargType             dtpb.EventCardType `protobuf:"varint,4,opt,name=targ_type,json=targType,proto3,enum=ULZProto.EventCardType" json:"targ_type,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}      `json:"-"`
-	XXX_unrecognized     []byte        `json:"-"`
-	XXX_sizecache        int32         `json:"-"`
+	XXX_NoUnkeyedLiteral struct{}           `json:"-"`
+	XXX_unrecognized     []byte             `json:"-"`
+	XXX_sizecache        int32              `json:"-"`
 }
 
 func (m *SESkillCalReq) Reset()         { *m = SESkillCalReq{} }
@@ -88,12 +89,12 @@ func (m *SESkillCalReq) GetTargType() dtpb.EventCardType {
 }
 
 type SESkillCalResp struct {
-	ResultVal            int32           `protobuf:"varint,1,opt,name=result_val,json=resultVal,proto3" json:"result_val,omitempty"`
+	ResultVal            int32                `protobuf:"varint,1,opt,name=result_val,json=resultVal,proto3" json:"result_val,omitempty"`
 	EffectResult         []*dtpb.EffectResult `protobuf:"bytes,2,rep,name=effect_result,json=effectResult,proto3" json:"effect_result,omitempty"`
 	TargType             dtpb.EventCardType   `protobuf:"varint,3,opt,name=targ_type,json=targType,proto3,enum=ULZProto.EventCardType" json:"targ_type,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
-	XXX_unrecognized     []byte          `json:"-"`
-	XXX_sizecache        int32           `json:"-"`
+	XXX_NoUnkeyedLiteral struct{}             `json:"-"`
+	XXX_unrecognized     []byte               `json:"-"`
+	XXX_sizecache        int32                `json:"-"`
 }
 
 func (m *SESkillCalResp) Reset()         { *m = SESkillCalResp{} }
@@ -268,15 +269,15 @@ func (m *DiceResultSet) GetValue() []int32 {
 }
 
 type SEEffectCalReq struct {
-	Id                   string        `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	FromTime             * `protobuf:"bytes,2,opt,name=from_time,json=fromTime,proto3" json:"from_time,omitempty"`
-	ToTime               *dtpb.EffectResult `protobuf:"bytes,3,opt,name=to_time,json=toTime,proto3" json:"to_time,omitempty"`
+	Id                   string             `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	FromTime             *dtpb.EffectTiming `protobuf:"bytes,2,opt,name=from_time,json=fromTime,proto3" json:"from_time,omitempty"`
+	ToTime               *dtpb.EffectTiming `protobuf:"bytes,3,opt,name=to_time,json=toTime,proto3" json:"to_time,omitempty"`
 	GamesetInstant       *dtpb.GameDataSet  `protobuf:"bytes,4,opt,name=gameset_instant,json=gamesetInstant,proto3" json:"gameset_instant,omitempty"`
-	FromCli              string        `protobuf:"bytes,5,opt,name=from_cli,json=fromCli,proto3" json:"from_cli,omitempty"`
-	Remark               string        `protobuf:"bytes,6,opt,name=remark,proto3" json:"remark,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}      `json:"-"`
-	XXX_unrecognized     []byte        `json:"-"`
-	XXX_sizecache        int32         `json:"-"`
+	FromCli              string             `protobuf:"bytes,5,opt,name=from_cli,json=fromCli,proto3" json:"from_cli,omitempty"`
+	Remark               string             `protobuf:"bytes,6,opt,name=remark,proto3" json:"remark,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}           `json:"-"`
+	XXX_unrecognized     []byte             `json:"-"`
+	XXX_sizecache        int32              `json:"-"`
 }
 
 func (m *SEEffectCalReq) Reset()         { *m = SEEffectCalReq{} }
@@ -311,14 +312,14 @@ func (m *SEEffectCalReq) GetId() string {
 	return ""
 }
 
-func (m *SEEffectCalReq) GetFromTime() *dtpb.EffectResult {
+func (m *SEEffectCalReq) GetFromTime() *dtpb.EffectTiming {
 	if m != nil {
 		return m.FromTime
 	}
 	return nil
 }
 
-func (m *SEEffectCalReq) GetToTime() *dtpb.EffectResult {
+func (m *SEEffectCalReq) GetToTime() *dtpb.EffectTiming {
 	if m != nil {
 		return m.ToTime
 	}
@@ -347,15 +348,15 @@ func (m *SEEffectCalReq) GetRemark() string {
 }
 
 type SEEffectCalResp struct {
-	Id                   string        `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	FromCli              string        `protobuf:"bytes,2,opt,name=from_cli,json=fromCli,proto3" json:"from_cli,omitempty"`
+	Id                   string             `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	FromCli              string             `protobuf:"bytes,2,opt,name=from_cli,json=fromCli,proto3" json:"from_cli,omitempty"`
 	GamesetResult        *dtpb.GameDataSet  `protobuf:"bytes,3,opt,name=gameset_result,json=gamesetResult,proto3" json:"gameset_result,omitempty"`
-	ResultInfo           []string      `protobuf:"bytes,4,rep,name=result_info,json=resultInfo,proto3" json:"result_info,omitempty"`
+	ResultInfo           []string           `protobuf:"bytes,4,rep,name=result_info,json=resultInfo,proto3" json:"result_info,omitempty"`
 	FromTime             *dtpb.EffectResult `protobuf:"bytes,5,opt,name=from_time,json=fromTime,proto3" json:"from_time,omitempty"`
 	ToTime               *dtpb.EffectResult `protobuf:"bytes,6,opt,name=to_time,json=toTime,proto3" json:"to_time,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}      `json:"-"`
-	XXX_unrecognized     []byte        `json:"-"`
-	XXX_sizecache        int32         `json:"-"`
+	XXX_NoUnkeyedLiteral struct{}           `json:"-"`
+	XXX_unrecognized     []byte             `json:"-"`
+	XXX_sizecache        int32              `json:"-"`
 }
 
 func (m *SEEffectCalResp) Reset()         { *m = SEEffectCalResp{} }

@@ -16,49 +16,55 @@ import (
 	// _ "ULZGameDuelService/statik"
 )
 
+/**
+ * Move-Phase-Confirm : (rpc)
+ * 		request handle in move-card-drop-phase:proxy
+ */
 func (this *ULZGameDuelServiceBackend) MovePhaseConfirm(ctx context.Context, req *pb.GDMoveConfirmReq) (*pb.Empty, error) {
 	cm.PrintReqLog(ctx, "Move-Phase-Confirm", req)
 	start := time.Now()
 	this.mu.Lock()
-	wkbox := this.searchAliveClient()
 	defer func() {
-		wkbox.Preserve(false)
+		// wkbox.Preserve(false)
 		this.mu.Unlock()
 		elapsed := time.Since(start)
 		log.Printf("Move-Phase-Confirm took %s", elapsed)
 	}()
 	// get data -----
 	wg := sync.WaitGroup{}
+	// ======================================================================
 	wg.Add(2)
 	// MovePhaseSnapMod
 	var snapMove pb.MovePhaseSnapMod
 	var snapMovekey = req.RoomKey + snapMove.RdsKeyName()
 	errch := make(chan error)
 	go func() {
+		wkbox := this.searchAliveClient()
 		if _, err := (wkbox).GetPara(&snapMovekey, &snapMove); err != nil {
 			log.Println(err)
-			errch <- status.Errorf(codes.NotFound, err.Error())
+			errch <- err
 		}
+		wkbox.Preserve(false)
 		wg.Done()
 	}()
 	// PhaseSnapMod
 	var snapPhase pb.PhaseSnapMod
 	snapPhasekey := req.RoomKey + snapPhase.RdsKeyName()
 	go func() {
+		wkbox := this.searchAliveClient()
 		if _, err := (wkbox).GetPara(&snapPhasekey, &snapMove); err != nil {
 			log.Println(err)
-			errch <- status.Errorf(codes.NotFound, err.Error())
+			errch <- err
 		}
+		wkbox.Preserve(false)
 		wg.Done()
 	}()
-
-	// var eventNode pb.EventSnapMod
-
 	wg.Wait()
-
 	if err := <-errch; err != nil {
-		return nil, err
+		return nil, status.Error(codes.Internal, err.Error())
 	}
+	// ======================================================================
+
 	// ======= -----
 
 	if snapPhase.EventPhase != pb.EventHookPhase_move_card_drop_phase {
@@ -70,8 +76,36 @@ func (this *ULZGameDuelServiceBackend) MovePhaseConfirm(ctx context.Context, req
 		return nil, status.Error(codes.AlreadyExists, "ALREADY_READY")
 	}
 
+	// ======================================================================
+	wg.Add(2)
+	var Eff []*pb.EffectResult
+	var Val *int32
+	var err error
+	// @Skill-Calculate
+	go func() {
+		Val, Eff, err = this.skillClient.SkillCalculateWrap(
+			req.UpdateCard,
+			req.TriggerSkl,
+			pb.EventCardType_MOVE,
+		)
+		wg.Done()
+	}()
+	// effect-result
+	var effectMod pb.EffectNodeSnapMod
+	snapEfKey := req.RoomKey + effectMod.RdsKeyName()
+	go func() {
+		wkbox := this.searchAliveClient()
+		if _, err := (wkbox).GetPara(&snapEfKey, &effectMod); err != nil {
+			log.Println(err)
+			errch <- err
+		}
+		wkbox.Preserve(false)
+		wg.Done()
+	}()
+	wg.Wait()
+	// ======================================================================
+
 	if req.Side == pb.PlayerSide_HOST {
-		snapMove.HostVal = req.Point
 		snapMove.HostOpt = req.MoveOpt
 		snapMove.HostTrigSkl = req.TriggerSkl
 		snapMove.HostCard = req.UpdateCard
@@ -79,41 +113,69 @@ func (this *ULZGameDuelServiceBackend) MovePhaseConfirm(ctx context.Context, req
 		snapPhase.IsHostReady = true
 
 	} else if req.Side == pb.PlayerSide_DUELER {
-		snapMove.DuelVal = req.Point
 		snapMove.DuelOpt = req.MoveOpt
 		snapMove.DuelTrigSkl = req.TriggerSkl
 		snapMove.DuelCard = req.UpdateCard
 		// snapPhase
+		// snapMove.DuelVal = *Val
 		snapPhase.IsDuelReady = true
 	}
+
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	if req.Side == pb.PlayerSide_HOST {
+		snapMove.HostVal = *Val
+	} else if req.Side == pb.PlayerSide_DUELER {
+		snapMove.DuelVal = *Val
+	}
+
+	effectMod.PendingEf = append(effectMod.PendingEf, Eff...)
+
 	// do snap-mod update
 	// wg.Add(1)
 
-	wg.Add(2)
+	// ======================================================================
+	wg.Add(3)
 	go func() {
+		wkbox := this.searchAliveClient()
 		if _, err := (wkbox).SetPara(&snapMovekey, snapMove); err != nil {
 			log.Println(err)
-			errch <- status.Errorf(codes.Internal, err.Error())
+			errch <- err
 		}
+		wkbox.Preserve(false)
 		wg.Done()
 	}()
 	go func() {
+		wkbox := this.searchAliveClient()
 		if _, err := (wkbox).SetPara(&snapPhasekey, snapPhase); err != nil {
 			log.Println(err)
-			errch <- status.Errorf(codes.Internal, err.Error())
+			errch <- err
 		}
+		wkbox.Preserve(false)
+		wg.Done()
+	}()
+	go func() {
+		wkbox := this.searchAliveClient()
+		if _, err := (wkbox).SetPara(&snapEfKey, effectMod); err != nil {
+			log.Println(err)
+			errch <- err
+		}
+		wkbox.Preserve(false)
 		wg.Done()
 	}()
 	wg.Wait()
 	if err := <-errch; err != nil {
-		return nil, err
+		return nil, status.Error(codes.Internal, err.Error())
 	}
+	// ======================================================================
 
 	// broadcast ok ?
 	// side := req.Side.String()
 	go this.BroadCast(&pb.GDBroadcastResp{
 		RoomKey:      req.RoomKey,
-		Msg:          req.Side.String() + "_READY",
+		Msg:          fmt.Sprintf("MOV_PHASE:%s_IS_READY", req.Side.String()),
 		Command:      pb.CastCmd_GET_MOVE_PHASE_RESULT,
 		CurrentPhase: pb.EventHookPhase_move_card_drop_phase,
 		PhaseHook:    pb.EventHookType_Proxy,
@@ -137,9 +199,14 @@ func (this *ULZGameDuelServiceBackend) MovePhaseConfirm(ctx context.Context, req
 			mbox := this.searchAliveClient()
 			var gameDt pb.GameDataSet
 			mbox.GetPara(&req.RoomKey, &gameDt)
-			gameDt.HookType = pb.EventHookType_After
+			gameDt.HookType = pb.EventHookType_Proxy
 			mbox.Preserve(false)
-			this.moveNextPhase(&gameDt, &snapPhase)
+			this.moveNextPhase(
+				&gameDt,
+				&snapPhase,
+				&effectMod,
+				&snapMove,
+			)
 		}()
 	}
 	return &pb.Empty{}, nil
@@ -217,39 +284,40 @@ func (this *ULZGameDuelServiceBackend) MovePhaseResult(ctx context.Context, req 
 		}
 		wg.Done()
 	}()
-
 	wg.Wait()
+	if err := <-errch; err != nil {
+		return nil, status.Errorf(codes.NotFound, err.Error())
+	}
 
 	go func() {
-		snapMovekey := req.RoomKey + PhaseMod.RdsKeyName()
-		wkbox1 := this.searchAliveClient()
-		if _, err := (wkbox1).GetPara(&snapMovekey, &PhaseMod); err != nil {
-			log.Println(err)
-			errch <- status.Errorf(codes.NotFound, err.Error())
-		}
-		if !req.IsWatcher && req.Side == pb.PlayerSide_HOST {
-			PhaseMod.IsHostReady = true
-		} else if !req.IsWatcher && req.Side == pb.PlayerSide_DUELER {
-			PhaseMod.IsDuelReady = true
-		}
-		go (wkbox1).SetPara(&snapMovekey, PhaseMod)
-		if PhaseMod.IsHostReady && PhaseMod.IsDuelReady {
-			go this.BroadCast(&pb.GDBroadcastResp{
-				RoomKey:      req.RoomKey,
-				Msg:          fmt.Sprintf("MV_PHASE:ACK_Both_SideResolve:"),
-				Command:      pb.CastCmd_GET_MOVE_PHASE_RESULT,
-				CurrentPhase: pb.EventHookPhase_attack_card_drop_phase,
-				PhaseHook:    pb.EventHookType_Proxy,
-			})
+		if !req.IsWatcher {
+			snapMovekey := req.RoomKey + PhaseMod.RdsKeyName()
+			wkbox1 := this.searchAliveClient()
+			if _, err := (wkbox1).GetPara(&snapMovekey, &PhaseMod); err != nil {
+				log.Println(err)
+			}
+			if req.Side == pb.PlayerSide_HOST {
+				PhaseMod.IsHostReady = true
+			} else if req.Side == pb.PlayerSide_DUELER {
+				PhaseMod.IsDuelReady = true
+			}
+			(wkbox1).SetPara(&snapMovekey, PhaseMod)
+			if PhaseMod.IsHostReady && PhaseMod.IsDuelReady {
+				go this.BroadCast(&pb.GDBroadcastResp{
+					RoomKey:      req.RoomKey,
+					Msg:          fmt.Sprintf("MV_PHASE:ACK_Both_Side_Resolve:"),
+					Command:      pb.CastCmd_GET_MOVE_PHASE_RESULT,
+					CurrentPhase: pb.EventHookPhase_determine_move_phase,
+					PhaseHook:    pb.EventHookType_Proxy,
+				})
 
-			var gamDT pb.GameDataSet
-			wkbox1.GetPara(&req.RoomKey, &gamDT)
-			// suppose (gamDT.EventPhase == PhaseMod.EventPhase) === pb.determine
-			// gamDT.EventPhase = PhaseMod.EventPhase
-			gamDT.HookType = pb.EventHookType_After
-			go this.moveNextPhase(&gamDT, &PhaseMod)
+				var gamDT pb.GameDataSet
+				wkbox1.GetPara(&req.RoomKey, &gamDT)
+				wkbox1.Preserve(false)
+				// suppose (gamDT.EventPhase == PhaseMod.EventPhase) === pb.determine
+				// gamDT.EventPhase = PhaseMod.EventPhase
+			}
 		}
-
 	}()
 
 	return &snapMove, nil

@@ -3,38 +3,31 @@ package serverCtl
 import (
 	pb "ULZGameDuelService/proto"
 	"fmt"
-	"log"
 	"sort"
 	"sync"
 )
 
-// phaseTrigEf : general phase trigger effect
+// phaseTrigEf : general phase trigger effect-node
 // it only handle Instance_Change / direct-dmg
 // NOTE not available for atk/def, move phase calculation
-func (this *ULZGameDuelServiceBackend) phaseTrigEf(gameDS *pb.GameDataSet) {
-	var efResult pb.EffectNodeSnapMod
-	var efResList []*pb.EffectResult
-	wkbox := this.searchAliveClient()
-	searchKey := gameDS.RoomKey + efResult.RdsKeyName()
-	if gameDS.EffectCounter != nil {
-		efResList = gameDS.EffectCounter
-	} else {
-		if _, err := wkbox.GetPara(&searchKey, efResult); err != nil {
-			log.Println(err)
-		}
-	}
-	wkbox.Preserve(false)
+func (this *ULZGameDuelServiceBackend) phaseTrigEf(
+	gameDS *pb.GameDataSet,
+	phaseMod *pb.PhaseSnapMod,
+	effectMod *pb.EffectNodeSnapMod,
+) {
+	efResList := effectMod.PendingEf
 	if len(efResList) == 0 {
 		return
 	}
 
 	tarEf := pb.NodeFilter(efResList, func(v *pb.EffectResult) bool {
-		return (v.TriggerTime.EventPhase == gameDS.EventPhase) &&
-			(v.TriggerTime.HookType == gameDS.HookType)
+		return (v.TriggerTime.EventPhase == phaseMod.EventPhase) &&
+			(v.TriggerTime.HookType == phaseMod.HookType)
 	})
 	if len(tarEf) == 0 {
 		return
 	}
+
 	sort.Slice(tarEf, func(i, j int) bool {
 		return tarEf[i].TriggerTime.SubCount < tarEf[i].TriggerTime.SubCount
 	})
@@ -196,16 +189,17 @@ func (this *ULZGameDuelServiceBackend) phaseTrigEf(gameDS *pb.GameDataSet) {
 			PhaseHook:    gameDS.HookType,
 		})
 	}()
-	fmt.Println(efResult)
+	fmt.Println(effectMod)
 	// save data
-	wkbox = this.searchAliveClient()
+	wkbox := this.searchAliveClient()
 	wg.Add(2)
 	go func() {
 		wkbox.SetPara(&gameDS.RoomKey, gameDS)
 		wg.Done()
 	}()
 	go func() {
-		wkbox.SetPara(&searchKey, efResult)
+		searchKey := gameDS.RoomKey + effectMod.RdsKeyName()
+		wkbox.SetPara(&searchKey, effectMod)
 		wg.Done()
 	}()
 	wg.Wait()

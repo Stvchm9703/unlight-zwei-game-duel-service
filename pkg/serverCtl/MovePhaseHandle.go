@@ -4,7 +4,6 @@ import (
 	pb "ULZGameDuelService/proto"
 	"fmt"
 	"log"
-	"sync"
 	// cm "ULZGameDuelService/pkg/common"
 	// "context"
 	// "log"
@@ -14,65 +13,25 @@ import (
 	// "google.golang.org/grpc/codes"
 )
 
+/**
+ * movePhaseHandle :
+ * 		for handle the determine_move_phase:proxy logic
+ */
 func (this *ULZGameDuelServiceBackend) movePhaseHandle(
-	roomKey *string,
 	gameSet *pb.GameDataSet,
-	moveMod *pb.MovePhaseSnapMod,
 	stateMod *pb.PhaseSnapMod,
 	effectMod *pb.EffectNodeSnapMod,
+	moveMod *pb.MovePhaseSnapMod,
 ) {
 	// go to request the move result
 	// SECTION: skill-calculation
-	// do effect calculate
-	result := 0
-	// do update
-
-	var snapModkey = *roomKey + moveMod.RdsKeyName()
-
-	wg := sync.WaitGroup{}
-	errCh := make(chan error)
-	// host
-	var hostVal *int32
-	var hostEff []*pb.EffectResult
-	wg.Add(1)
-	go func() {
-		var err error
-		hostVal, hostEff, err = this.skillClient.SkillCalculateWrap(moveMod.HostCard, moveMod.HostTrigSkl, "move")
-		if err != nil {
-			errCh <- err
-			return
-		}
-		wg.Done()
-	}()
-
-	// duel
-	var duelVal *int32
-	var duelEff []*pb.EffectResult
-	wg.Add(1)
-	go func() {
-		var err error
-		duelVal, duelEff, err = this.skillClient.SkillCalculateWrap(moveMod.DuelCard, moveMod.DuelTrigSkl, "move")
-		if err != nil {
-			errCh <- err
-			return
-		}
-		wg.Done()
-	}()
-
-	wg.Wait()
-
-	if errt := <-errCh; errt != nil {
-		fmt.Printf(" \n")
-		return
-	}
-
-	effectMod.PendingEf = append(effectMod.PendingEf, hostEff...)
-	effectMod.PendingEf = append(effectMod.PendingEf, duelEff...)
 
 	// real act
+	_moveResult(gameSet, moveMod)
 
 	go func() {
 		wkbox := this.searchAliveClient()
+		snapModkey := gameSet.RoomKey + moveMod.RdsKeyName()
 		if _, err := (wkbox).SetPara(&snapModkey, moveMod); err != nil {
 			log.Println(err)
 		}
@@ -81,7 +40,7 @@ func (this *ULZGameDuelServiceBackend) movePhaseHandle(
 
 	go func() {
 		mbox := this.searchAliveClient()
-		efKey := *roomKey + effectMod.RdsKeyName()
+		efKey := gameSet.RoomKey + effectMod.RdsKeyName()
 		if _, err := (mbox).SetPara(&efKey, effectMod); err != nil {
 			log.Println(err)
 		}
@@ -89,8 +48,8 @@ func (this *ULZGameDuelServiceBackend) movePhaseHandle(
 	}()
 	// send ok message
 	go this.BroadCast(&pb.GDBroadcastResp{
-		RoomKey:      *roomKey,
-		Msg:          fmt.Sprintf("MOVE:MOVE_RESULT:", result),
+		RoomKey:      gameSet.RoomKey,
+		Msg:          fmt.Sprintf("MOVE:MOVE_RESULT:"),
 		Command:      pb.CastCmd_GET_MOVE_PHASE_RESULT,
 		CurrentPhase: pb.EventHookPhase_attack_card_drop_phase,
 		PhaseHook:    pb.EventHookType_Proxy,
@@ -99,6 +58,8 @@ func (this *ULZGameDuelServiceBackend) movePhaseHandle(
 }
 func _effectCheckForMovePhase(gmSet *pb.GameDataSet, eflist *pb.EffectNodeSnapMod) {
 	fmt.Println("Start Filter effect")
+	/** TODO : concat the Effect node that for move-phase calculating
+	 */
 	// host current card
 	var hostCurrentEF pb.EffectResult
 	// duel current card
@@ -126,10 +87,8 @@ func _effectCheckForMovePhase(gmSet *pb.GameDataSet, eflist *pb.EffectNodeSnapMo
 			if v.DisableChange {
 				duelCurrentEF.DisableChange = v.DisableChange
 			}
-
 		}
 	}
-
 }
 
 func _moveResult(gmdata *pb.GameDataSet, mod *pb.MovePhaseSnapMod) {

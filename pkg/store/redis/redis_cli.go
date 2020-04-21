@@ -5,6 +5,7 @@ import (
 
 	"encoding/json"
 	"log"
+	"reflect"
 	"strconv"
 	"strings"
 	"sync"
@@ -290,7 +291,15 @@ func (rc *RdsCliBox) SetPara(key *string, value interface{}) (bool, error) {
 	rc.lock()
 	defer rc.unlock()
 	keystr := rc.CoreKey + "/_" + rc.Key + "." + *key
-	jsonFormat, err := json.Marshal(value)
+	var jsonFormat []byte
+	var err error
+	if v := reflect.ValueOf(value); v.Kind() == reflect.Ptr {
+		v := reflect.ValueOf(value)
+		df := v.Elem()
+		jsonFormat, err = json.Marshal(df)
+	} else {
+		jsonFormat, err = json.Marshal(value)
+	}
 	if err != nil {
 		return false, err
 	}
