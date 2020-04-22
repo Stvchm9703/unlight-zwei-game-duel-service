@@ -29,6 +29,7 @@ func (this *ULZGameDuelServiceBackend) DrawPhaseConfirm(ctx context.Context, req
 	}
 	// change
 	var returner pb.PhaseSnapMod
+	// go func() {}()
 	phaseSnapKey := req.RoomKey + ":PhaseState"
 	if _, err := (wkbox).GetPara(&phaseSnapKey, &returner); err != nil {
 		log.Println(err)
@@ -82,23 +83,23 @@ func (this *ULZGameDuelServiceBackend) DrawPhaseConfirm(ctx context.Context, req
 			Msg:          "Both_Ready",
 			Command:      pb.CastCmd_GET_DRAW_PHASE_RESULT,
 			CurrentPhase: pb.EventHookPhase_refill_action_card_phase,
-			PhaseHook:    pb.EventHookType_After,
+			PhaseHook:    pb.EventHookType_Proxy,
 			Side:         0,
 			InstanceSet:  nil,
 		})
 		// go this.phaseTrigEf()
 
-		go func() {
-			var gameSet pb.GameDataSet
-			if _, err := wkbox.SetPara(&req.RoomKey, &gameSet); err != nil {
-				errch <- status.Error(codes.Internal, err.Error())
-			} else {
-				// this.phaseTrigEf(&gameSet)
-			}
-		}()
-		if err := <-errch; err != nil {
-			return nil, err
-		}
+		// go func() {
+		// 	var gameSet pb.GameDataSet
+		// 	if _, err := wkbox.SetPara(&req.RoomKey, &gameSet); err != nil {
+		// 		errch <- status.Error(codes.Internal, err.Error())
+		// 	} else {
+		// 		// this.phaseTrigEf(&gameSet)
+		// 	}
+		// }()
+		// if err := <-errch; err != nil {
+		// 	return nil, err
+		// }
 	}
 	return &pb.Empty{}, nil
 	// return nil, status.Error(codes.Unimplemented, "DRAW_PHASE_CONFIRM")

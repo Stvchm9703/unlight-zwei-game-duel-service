@@ -27,7 +27,6 @@ func (this *ULZGameDuelServiceBackend) movePhaseHandle(
 	// SECTION: skill-calculation
 
 	// real act
-	_moveResult(gameSet, moveMod)
 
 	go func() {
 		wkbox := this.searchAliveClient()
@@ -89,8 +88,4 @@ func _effectCheckForMovePhase(gmSet *pb.GameDataSet, eflist *pb.EffectNodeSnapMo
 			}
 		}
 	}
-}
-
-func _moveResult(gmdata *pb.GameDataSet, mod *pb.MovePhaseSnapMod) {
-
 }

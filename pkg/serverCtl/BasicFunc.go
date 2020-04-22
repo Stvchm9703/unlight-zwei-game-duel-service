@@ -39,7 +39,7 @@ func (this *ULZGameDuelServiceBackend) CreateGame(ctx context.Context, req *pb.G
 		}
 		return &returner, status.Error(codes.AlreadyExists, "create-game,the room exist 1")
 	}
-	gameSetKey := req.RoomKey + ":GameDS"
+	gameSetKey := req.RoomKey
 	new_gameset := pb.GameDataSet{
 		// by request
 		RoomKey:         req.RoomKey,
@@ -71,7 +71,8 @@ func (this *ULZGameDuelServiceBackend) CreateGame(ctx context.Context, req *pb.G
 	// event-card-control
 	new_gameset.HostEventCardDeck = genCardSet(150, 0)
 	new_gameset.DuelEventCardDeck = genCardSet(150, 0)
-	wg.Add(3)
+	wg.Add(6)
+	// Host-Event-Card-Deck
 	go func() {
 		tmpKey := req.RoomKey + ":HtEvtCrdDk"
 		if _, err := wkbox.SetPara(&tmpKey, new_gameset.HostCardDeck); err != nil {
@@ -80,7 +81,7 @@ func (this *ULZGameDuelServiceBackend) CreateGame(ctx context.Context, req *pb.G
 		}
 		wg.Done()
 	}()
-
+	// Duel-Event-Card-Deck
 	go func() {
 		tmpKey1 := req.RoomKey + ":DlEvtCrdDk"
 		if _, err := wkbox.SetPara(&tmpKey1, new_gameset.DuelCardDeck); err != nil {
@@ -89,6 +90,7 @@ func (this *ULZGameDuelServiceBackend) CreateGame(ctx context.Context, req *pb.G
 		}
 		wg.Done()
 	}()
+	// PhaseSnapMod
 	go func() {
 		phase_inst := pb.PhaseSnapMod{
 			Turns:       1,
@@ -105,7 +107,6 @@ func (this *ULZGameDuelServiceBackend) CreateGame(ctx context.Context, req *pb.G
 		}
 		wg.Done()
 	}()
-
 	// move-instance
 	go func() {
 		move_instance := pb.MovePhaseSnapMod{
@@ -119,7 +120,6 @@ func (this *ULZGameDuelServiceBackend) CreateGame(ctx context.Context, req *pb.G
 		wg.Done()
 	}()
 	// ad-phase-instance
-	wg.Add(1)
 	go func() {
 		ad_instance := pb.ADPhaseSnapMod{
 			Turns:       0,
@@ -133,9 +133,7 @@ func (this *ULZGameDuelServiceBackend) CreateGame(ctx context.Context, req *pb.G
 		}
 		wg.Done()
 	}()
-
 	//EffectNodeMod
-	wg.Add(1)
 	go func() {
 		ef_instance := pb.EffectNodeSnapMod{
 			Turns:     0,

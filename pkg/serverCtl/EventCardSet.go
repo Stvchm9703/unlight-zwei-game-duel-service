@@ -115,10 +115,10 @@ func LoadFromFilePBC(skip bool) error {
 			log.Fatal(err)
 			return err
 		}
-		fmt.Println(string(line))
+		// fmt.Println(string(line))
 		var y pb.EventCard
 		proto.Unmarshal(line, &y)
-		fmt.Println(y)
+		// fmt.Printf("%#v", y)
 		if y.FuncMount == 0 && skip {
 			EventCardSetArr = append(EventCardSetArr, &y)
 		}

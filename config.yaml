@@ -1,6 +1,6 @@
 tmpl_server:
   ip: 192.168.0.102
-  port: 11000
+  port: 13000
   root_path: ""
   main_path: ""
   static_filepath: ""
@@ -11,7 +11,7 @@ tmpl_server:
 api_server:
   conn_type: grpc
   ip: 192.168.0.102
-  port: 11000
+  port: 13000
   max_pool_size: 20
   api_refer_type: proto
   api_table_filepath: "'./proto/','./'"
@@ -40,6 +40,15 @@ auth_server:
   conn_type: grpc
   ip: 192.168.0.102
   port: 12000
+  max_pool_size: 1
+  api_refer_type: proto
+  api_table_filepath: "'./proto/','./'"
+  api_outpath: "api/"
+
+nats_conn:
+  conn_type: tcp
+  ip: 192.168.0.110
+  port: 4222
   max_pool_size: 1
   api_refer_type: proto
   api_table_filepath: "'./proto/','./'"

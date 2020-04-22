@@ -1,11 +1,11 @@
 package serverCtl
 
 import (
+	"fmt"
 	"log"
 	"net"
 	"os"
 	"os/signal"
-	"strconv"
 	"syscall"
 
 	cf "ULZGameDuelService/pkg/config"
@@ -26,7 +26,7 @@ var (
 
 func ServerMainProcess(testing_config *cf.ConfTmp) {
 	log.Println("start run")
-	addr := testing_config.APIServer.IP + ":" + strconv.Itoa(testing_config.APIServer.Port)
+	addr := fmt.Sprintf(":%v", testing_config.APIServer.Port)
 	lis, err := net.Listen("tcp", addr)
 	if err != nil {
 		panic("Failed to listen:\t" + err.Error())

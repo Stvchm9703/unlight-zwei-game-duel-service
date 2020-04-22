@@ -1,18 +1,19 @@
-package natsCli 
+package natscli
 
 import (
-	stan "github.com/nats-io/stan.go"
+	nats "github.com/nats-io/nats.go"
+	// pb "ULZGameDuelService/proto"
 )
 
 type NatsCli struct {
-	coreCli string
-	nats stan.NatsCli
+	coreCli  string
+	natsConn *nats.Conn
 }
 
-/** 
- * 
+/**
  *
- *  
+ *
+ *
  * sc, _ := stan.Connect(clusterID, clientID)
 
 // Simple Synchronous Publisher
@@ -30,7 +31,18 @@ sub.Unsubscribe()
 sc.Close()
 */
 
-func NewNatsCli(key string) (*NatsCli, error){
-	sc,_ := stan.Connect("", "")
-	return &NatsCli, nil
+func NewNatsCli(address string, clientId string) (*NatsCli, error) {
+	nc, _ := nats.Connect(address)
+	return &NatsCli{
+		coreCli:  clientId,
+		natsConn: nc,
+	}, nil
+}
+
+func (nc *NatsCli) Broadcast(roomKey string, msg []byte) {
+	nc.natsConn.Publish(roomKey, msg)
+}
+
+func (nc *NatsCli) Close() {
+	nc.natsConn.Close()
 }

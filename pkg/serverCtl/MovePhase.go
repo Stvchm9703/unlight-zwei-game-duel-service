@@ -33,11 +33,23 @@ func (this *ULZGameDuelServiceBackend) MovePhaseConfirm(ctx context.Context, req
 	// get data -----
 	wg := sync.WaitGroup{}
 	// ======================================================================
-	wg.Add(2)
+	wg.Add(3)
+	errch := make(chan error)
+
+	var gameSet pb.GameDataSet
+	var gameSetKey = req.RoomKey
+	go func() {
+		wkbox := this.searchAliveClient()
+		if _, err := (wkbox).GetPara(&gameSetKey, &gameSet); err != nil {
+			log.Println(err)
+			errch <- err
+		}
+		wkbox.Preserve(false)
+		wg.Done()
+	}()
 	// MovePhaseSnapMod
 	var snapMove pb.MovePhaseSnapMod
 	var snapMovekey = req.RoomKey + snapMove.RdsKeyName()
-	errch := make(chan error)
 	go func() {
 		wkbox := this.searchAliveClient()
 		if _, err := (wkbox).GetPara(&snapMovekey, &snapMove); err != nil {
@@ -80,16 +92,20 @@ func (this *ULZGameDuelServiceBackend) MovePhaseConfirm(ctx context.Context, req
 	wg.Add(2)
 	var Eff []*pb.EffectResult
 	var Val *int32
-	var err error
 	// @Skill-Calculate
 	go func() {
+		var err error
 		Val, Eff, err = this.skillClient.SkillCalculateWrap(
 			req.UpdateCard,
 			req.TriggerSkl,
 			pb.EventCardType_MOVE,
 		)
+		if err != nil {
+			errch <- err
+		}
 		wg.Done()
 	}()
+
 	// effect-result
 	var effectMod pb.EffectNodeSnapMod
 	snapEfKey := req.RoomKey + effectMod.RdsKeyName()
@@ -103,35 +119,51 @@ func (this *ULZGameDuelServiceBackend) MovePhaseConfirm(ctx context.Context, req
 		wg.Done()
 	}()
 	wg.Wait()
+	if err := <-errch; err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
 	// ======================================================================
-
+	var currentAtkKey int32
 	if req.Side == pb.PlayerSide_HOST {
 		snapMove.HostOpt = req.MoveOpt
 		snapMove.HostTrigSkl = req.TriggerSkl
 		snapMove.HostCard = req.UpdateCard
+		snapMove.HostVal = *Val
 		// snapPhase
 		snapPhase.IsHostReady = true
+		currentAtkKey = gameSet.HostCurrCardKey
 
 	} else if req.Side == pb.PlayerSide_DUELER {
 		snapMove.DuelOpt = req.MoveOpt
 		snapMove.DuelTrigSkl = req.TriggerSkl
 		snapMove.DuelCard = req.UpdateCard
 		// snapPhase
-		// snapMove.DuelVal = *Val
-		snapPhase.IsDuelReady = true
-	}
-
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	if req.Side == pb.PlayerSide_HOST {
-		snapMove.HostVal = *Val
-	} else if req.Side == pb.PlayerSide_DUELER {
 		snapMove.DuelVal = *Val
+		snapPhase.IsDuelReady = true
+		currentAtkKey = gameSet.DuelCurrCardKey
 	}
 
 	effectMod.PendingEf = append(effectMod.PendingEf, Eff...)
+
+	// add instant mp
+	var addEff []*pb.EffectResult
+	var addVal int32
+	addEff = pb.NodeFilter(effectMod.PendingEf, func(v *pb.EffectResult) bool {
+		return (v.TriggerTime.EventPhase == pb.EventHookPhase_determine_move_phase &&
+			v.TriggerTime.HookType == pb.EventHookType_Proxy &&
+			v.EfOption == pb.EffectOption_Status_Addition &&
+			v.TarSide == req.Side &&
+			v.TarCard == currentAtkKey)
+	})
+	for _, v := range addEff {
+		addVal += v.Mp
+	}
+
+	if req.Side == pb.PlayerSide_HOST {
+		snapMove.HostVal += addVal
+	} else if req.Side == pb.PlayerSide_DUELER {
+		snapMove.DuelVal += addVal
+	}
 
 	// do snap-mod update
 	// wg.Add(1)
@@ -175,7 +207,7 @@ func (this *ULZGameDuelServiceBackend) MovePhaseConfirm(ctx context.Context, req
 	// side := req.Side.String()
 	go this.BroadCast(&pb.GDBroadcastResp{
 		RoomKey:      req.RoomKey,
-		Msg:          fmt.Sprintf("MOV_PHASE:%s_IS_READY", req.Side.String()),
+		Msg:          fmt.Sprintf("MOV_PHASE:Val_Ready:%v", req.Side.String(), *Val+addVal),
 		Command:      pb.CastCmd_GET_MOVE_PHASE_RESULT,
 		CurrentPhase: pb.EventHookPhase_move_card_drop_phase,
 		PhaseHook:    pb.EventHookType_Proxy,
@@ -189,7 +221,7 @@ func (this *ULZGameDuelServiceBackend) MovePhaseConfirm(ctx context.Context, req
 			Msg:          "Both Ready",
 			Command:      pb.CastCmd_GET_MOVE_PHASE_RESULT,
 			CurrentPhase: pb.EventHookPhase_move_card_drop_phase,
-			PhaseHook:    pb.EventHookType_After,
+			PhaseHook:    pb.EventHookType_Proxy,
 			InstanceSet:  nil,
 		})
 		// go store before move next

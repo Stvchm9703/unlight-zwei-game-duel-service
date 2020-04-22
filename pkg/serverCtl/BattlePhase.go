@@ -11,7 +11,6 @@ import (
 
 func (this *ULZGameDuelServiceBackend) battlePhaseHandle(
 	gameSet *pb.GameDataSet,
-	snapMod *pb.ADPhaseSnapMod,
 	stateMod *pb.PhaseSnapMod,
 	effectMod *pb.EffectNodeSnapMod,
 	adStoreMod *pb.ADPhaseSnapMod,

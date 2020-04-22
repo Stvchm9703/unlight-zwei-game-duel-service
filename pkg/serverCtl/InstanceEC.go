@@ -70,7 +70,6 @@ func (this *ULZGameDuelServiceBackend) InstSetEventCard(ctx context.Context, req
 			wg.Done()
 		}()
 	}
-
 	if _, err := wkbox.SetPara(&ky, tmpSet); err != nil {
 		log.Println(err)
 		return nil, status.Errorf(codes.Internal, err.Error())

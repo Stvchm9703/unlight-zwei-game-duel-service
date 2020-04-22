@@ -94,8 +94,8 @@ func (this *ULZGameDuelServiceBackend) attackPhaseHandle(
 			snapMod.AttackVal += v.Ap
 		}
 	}
-
 	// ======================================================================
+
 	errch = make(chan error)
 	wg.Add(2)
 	go func() {

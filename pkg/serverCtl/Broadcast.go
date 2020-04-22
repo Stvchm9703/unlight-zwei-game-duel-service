@@ -2,57 +2,49 @@ package serverCtl
 
 import (
 	cm "ULZGameDuelService/pkg/common"
-	cf "ULZGameDuelService/pkg/config"
 	ws "ULZGameDuelService/pkg/websocket"
 	pb "ULZGameDuelService/proto"
 	"context"
 	"fmt"
 	"log"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gogo/status"
+	"github.com/golang/protobuf/proto"
 	"google.golang.org/grpc/codes"
+	// "google."
 	// "time"
 )
 
 func (this *ULZGameDuelServiceBackend) ServerBroadcast(rReq *pb.GDGetInfoReq, stream pb.GameDuelService_ServerBroadcastServer) error {
 	cm.PrintReqLog(nil, "server-broadcast", rReq)
-	return status.Error(codes.Internal, "SkipImpl")
-	// _, err := this.AddStream(&rReq.RoomKey, &rReq.IncomeUserId, &stream)
-	// if err != nil {
-	// 	return status.Error(codes.NotFound, err.Error())
-	// }
-	// go func() {
-	// 	<-stream.Context().Done()
-	// 	log.Println("close done")
-	// 	_, err := this.DelStream(&rReq.RoomKey, &rReq.IncomeUserId)
-	// 	if err != nil {
-	// 		log.Println(err)
-	// 	}
-	// }()
-	// for {
-	// }
+	return status.Error(codes.Internal, "UseNAtsConn:")
 }
 
 func (this *ULZGameDuelServiceBackend) SendMessage(ctx context.Context, msg *pb.GDBroadcastResp) (*pb.Empty, error) {
 	cm.PrintReqLog(nil, "server-broadcast:msg", msg)
-	// this.BroadCast(&msg.Key, &msg.FromId, msg)
+	this.BroadCast(msg)
 	return &pb.Empty{}, nil
 }
 
 func (rsb *ULZGameDuelServiceBackend) BroadCast(cp *pb.GDBroadcastResp) error {
-	rsb.castServer.Broadcast(cp)
+	// rsb.castServer.Broadcast(cp)
+	msgpt, err := proto.Marshal(cp)
+	if err != nil {
+		return err
+	}
+	rsb.natscli.Publish(cp.RoomKey, msgpt)
 	return nil
 }
-func (rsb *ULZGameDuelServiceBackend) RunWebSocketServer(config cf.CfAPIServer) error {
-	hub := ws.NewHub()
-	go hub.Run()
-	router := gin.New()
-	router.GET("/:roomId", Wrapfunc(rsb, hub))
-	rsb.castServer = hub
-	return router.Run(config.IP + ":" + strconv.Itoa(config.PollingPort))
-}
+
+// func (rsb *ULZGameDuelServiceBackend) RunWebSocketServer(config cf.CfAPIServer) error {
+// 	hub := ws.NewHub()
+// 	go hub.Run()
+// 	router := gin.New()
+// 	router.GET("/:roomId", Wrapfunc(rsb, hub))
+// 	rsb.castServer = hub
+// 	return router.Run(config.IP + ":" + strconv.Itoa(config.PollingPort))
+// }
 
 // wraper to gin handler
 func Wrapfunc(rsb *ULZGameDuelServiceBackend, hub *ws.SocketHub) gin.HandlerFunc {

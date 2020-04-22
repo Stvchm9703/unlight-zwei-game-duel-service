@@ -3,6 +3,7 @@ package serverCtl
 import (
 	pb "ULZGameDuelService/proto"
 	"fmt"
+	"log"
 	// Static files
 	// _ "ULZGameDuelService/statik"
 )
@@ -16,23 +17,42 @@ func (this *ULZGameDuelServiceBackend) proxyHandle(
 ) {
 	switch phaseMod.EventPhase {
 	case pb.EventHookPhase_gameset_start:
-		gamesetStart(gameSet)
+		this.gamesetStart(gameSet)
 		break
 	case pb.EventHookPhase_start_turn_phase:
-		startTurnPhase(gameSet)
+		this.startTurnPhase(gameSet)
+		break
+	case pb.EventHookPhase_refill_action_card_phase:
+		this.refillActionCard(gameSet)
+		break
+	case pb.EventHookPhase_move_card_drop_phase:
+		this.moveCardDropPhase(gameSet)
 		break
 	case pb.EventHookPhase_determine_move_phase:
-		// refillActionCard(gameSet)
+		snapMovMod, _ := snapMod[0].(*pb.MovePhaseSnapMod)
+		this.movePhaseHandle(gameSet, phaseMod, effectMod, snapMovMod)
 		break
 	case pb.EventHookPhase_finish_move_phase:
-
+		this.finishMovePhase(gameSet)
+		break
 	case pb.EventHookPhase_chara_change_phase:
-
+		// this.charaChangePhase(gameSet)
+		break
 	case pb.EventHookPhase_determine_chara_change_phase:
-
+		//
+	// case pb.EventHookPhase_attack_card_drop_phase:
+	// 		snapADMod, _ := snapMod[0].(*pb.ADPhaseSnapMod)
+	// 		this.attackPhaseHandle(gameSet, snapADMod, phaseMod, effectMod)
+	// 		break
+	// case pb.EventHookPhase_defence_card_drop_phase:
+	// 		snapADMod, _ := snapMod[0].(*pb.ADPhaseSnapMod)
+	// 		this.defencePhaseHandle(gameSet, snapADMod, phaseMod, effectMod)
+	// 		break
 	case pb.EventHookPhase_determine_battle_point_phase:
 
 	case pb.EventHookPhase_battle_result_phase:
+		snapADMod, _ := snapMod[0].(*pb.ADPhaseSnapMod)
+		this.battlePhaseHandle(gameSet, phaseMod, effectMod, snapADMod)
 
 	case pb.EventHookPhase_damage_phase:
 
@@ -51,30 +71,33 @@ func (this *ULZGameDuelServiceBackend) proxyHandle(
 	return
 }
 
-func gamesetStart(gameSet *pb.GameDataSet) {
+func (this *ULZGameDuelServiceBackend) gamesetStart(gameSet *pb.GameDataSet) {
+	log.Printf("game-start: key: %s\n", gameSet.RoomKey)
+}
+
+func (this *ULZGameDuelServiceBackend) startTurnPhase(gameSet *pb.GameDataSet) {
+	log.Printf("start-turn-phase: turn %v", gameSet.GameTurn)
+	gameSet.GameTurn++
+}
+
+func (this *ULZGameDuelServiceBackend) refillActionCard(gameSet *pb.GameDataSet) {
+	log.Printf("refill-action-card-phase: turn %v", gameSet.RoomKey)
+
+}
+func (this *ULZGameDuelServiceBackend) determineMovePhase(gameSet *pb.GameDataSet) {
 
 }
 
-func startTurnPhase(gameSet *pb.GameDataSet) {
+func (this *ULZGameDuelServiceBackend) finishMovePhase(gameSet *pb.GameDataSet) {}
 
-}
+func (this *ULZGameDuelServiceBackend) determineBattlePointPhase(gameSet *pb.GameDataSet) {}
 
-func determineMovePhase(gameSet *pb.GameDataSet) {
+func (this *ULZGameDuelServiceBackend) damageResultPhase(gameSet *pb.GameDataSet) {}
 
-}
+func (this *ULZGameDuelServiceBackend) deadCharaChangePhase(gameSet *pb.GameDataSet) {}
 
-func finishMovePhase(gameSet *pb.GameDataSet) {}
+func (this *ULZGameDuelServiceBackend) determineDeadCharaChangePhase(gameSet *pb.GameDataSet) {}
 
-func determineBattlePointPhase(gameSet *pb.GameDataSet) {}
+func (this *ULZGameDuelServiceBackend) changeInitiativePhase(gameSet *pb.GameDataSet) {}
 
-func battleResultPhase(gameSet *pb.GameDataSet) {}
-
-func damageResultPhase(gameSet *pb.GameDataSet) {}
-
-func deadCharaChangePhase(gameSet *pb.GameDataSet) {}
-
-func determineDeadCharaChangePhase(gameSet *pb.GameDataSet) {}
-
-func changeInitiativePhase(gameSet *pb.GameDataSet) {}
-
-func finishTurnPhase(gameSet *pb.GameDataSet) {}
+func (this *ULZGameDuelServiceBackend) finishTurnPhase(gameSet *pb.GameDataSet) {}

@@ -168,9 +168,14 @@ func (this *ULZGameDuelServiceBackend) ADPhaseConfirm(
 			wkbox.Preserve(false)
 
 			this.attackPhaseHandle(
-				&req.RoomKey,
 				&returner,
 				&snapMod,
+				&phaseInst,
+				&effectNode,
+			)
+			phaseInst.HookType = pb.EventHookType_After
+			this.moveNextPhase(
+				&returner,
 				&phaseInst,
 				&effectNode,
 			)
@@ -187,9 +192,14 @@ func (this *ULZGameDuelServiceBackend) ADPhaseConfirm(
 			}
 			wkbox.Preserve(false)
 			this.defencePhaseHandle(
-				&req.RoomKey,
 				&returner,
 				&snapMod,
+				&phaseInst,
+				&effectNode,
+			)
+			phaseInst.HookType = pb.EventHookType_After
+			this.moveNextPhase(
+				&returner,
 				&phaseInst,
 				&effectNode,
 			)

@@ -17,6 +17,7 @@ type ConfTmp struct {
 	APIServer         CfAPIServer     `toml:"api_server" json:"api_server" yaml:"api_server"`
 	Database          CfTDatabase     `toml:"database" json:"database" yaml:"database"`
 	CacheDb           CfTDatabase     `toml:"cache_db" json:"cache_db" yaml:"cache_db"`
+	NatsConn          CfAPIServer     `toml:"nats_conn" json:"nats_conn" yaml:"nats_conn"`
 	AuthServer        CfAPIServer     `toml:"auth_server" json:"auth_server" yaml:"auth_server"`
 	EffectCalcService []CfGrpcService `toml:"effect_calc_service" json:"effect_calc_service" yaml:"effect_calc_service"`
 }
