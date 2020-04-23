@@ -1,5 +1,5 @@
 syntax  =   "proto3";
-import      "message.proto";
+import      "sr_message.proto";
 // import      "common.proto";
 // import      "Data.proto";
 

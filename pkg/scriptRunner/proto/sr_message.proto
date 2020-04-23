@@ -27,6 +27,7 @@ message SESkillCalResp {
 message SEDiceCalReq    {
     int32                       income_dice                 = 1;
     int32                       act                         = 2;
+    repeated EffectResult       effect_result               = 3;
 }
 
 message SEDiceCalResp   {
