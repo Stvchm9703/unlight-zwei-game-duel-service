@@ -5,7 +5,7 @@ import  "EventHookPhase.proto";
 
 
 package ULZProto;
-option  go_package              = "proto";
+option  go_package              = ".;proto";
 option  csharp_namespace        = "ULZAsset.ProtoMod";
 
 

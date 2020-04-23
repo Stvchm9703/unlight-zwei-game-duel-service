@@ -1,7 +1,7 @@
 syntax="proto3";
 
 package ULZProto;
-option go_package = "proto";
+option go_package = ".;proto";
 // option rust = "event_hook_phase";
 option csharp_namespace = "ULZAsset.ProtoMod";
 /**

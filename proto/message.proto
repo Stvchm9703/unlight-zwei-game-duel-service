@@ -5,7 +5,7 @@ import  "Data.proto";
 package ULZProto;
 
 option  csharp_namespace        = "ULZAsset.ProtoMod";
-option  go_package              = "proto";
+option  go_package              = ".;proto";
 
 
 // ANCHOR: message-struct for game-service

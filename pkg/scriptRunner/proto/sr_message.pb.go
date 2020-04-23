@@ -598,7 +598,7 @@ var file_sr_message_proto_goTypes = []interface{}{
 	(*SEEffectCalResp)(nil),   // 6: ULZProto.SEEffectCalResp
 	(*dtpb.EventCard)(nil),    // 7: ULZProto.EventCard
 	(*dtpb.SkillSet)(nil),     // 8: ULZProto.SkillSet
-	(EventCardType)(0),        // 9: ULZProto.EventCardType
+	(dtpb.EventCardType)(0),   // 9: ULZProto.EventCardType
 	(*dtpb.EffectResult)(nil), // 10: ULZProto.EffectResult
 	(*dtpb.EffectTiming)(nil), // 11: ULZProto.EffectTiming
 	(*dtpb.GameDataSet)(nil),  // 12: ULZProto.GameDataSet
@@ -629,7 +629,7 @@ func file_sr_message_proto_init() {
 	if File_sr_message_proto != nil {
 		return
 	}
-	file_Data_proto_init()
+	dtpb.File_Data_proto_init()
 	if !protoimpl.UnsafeEnabled {
 		file_sr_message_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*SESkillCalReq); i {

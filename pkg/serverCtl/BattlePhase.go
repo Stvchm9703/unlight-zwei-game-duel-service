@@ -17,7 +17,7 @@ func (this *ULZGameDuelServiceBackend) determineBattlePointPhase(
 	effectMod *pb.EffectNodeSnapMod,
 	adStoreMod *pb.ADPhaseSnapMod,
 ) {
-	this.skillClient.EffectCalculateWrap(gameSet.RoomKey)
+	// this.skillClient.EffectCalculateWrap(gameSet.RoomKey)
 
 }
 

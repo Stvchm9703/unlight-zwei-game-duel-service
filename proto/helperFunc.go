@@ -105,3 +105,7 @@ func (set *EventCardListSet) ECListMoveTo(fromPos EventCardPos, toPos EventCardP
 		}
 	}
 }
+
+func File_Data_proto_init() {
+	file_Data_proto_init()
+}
