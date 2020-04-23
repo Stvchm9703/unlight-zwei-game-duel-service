@@ -141,17 +141,55 @@ func (this *ULZGameDuelServiceBackend) moveNextPhase(
 	effectMod *pb.EffectNodeSnapMod,
 	snapMod ...interface{},
 ) {
-	switch phaseMod.HookType {
-	case pb.EventHookType_Before, pb.EventHookType_After:
-		// this.phaseTrigEf(gameDS, phaseMod, effectMod)
-		this.executeEffectNode(gameDS, phaseMod, effectMod)
-		break
-	case pb.EventHookType_Proxy:
+	/**
+	 * run the current phase:type
+	 * e.g. : phase_a:before => phase_a:proxy
+	 * 		: phase_a:after => phase_b:before
+	 *
+	 * # Proxy may have two-side confirm, therefore it may stop at proxy state
+	 */
+	this.executeEffectNode(gameDS, phaseMod, effectMod)
+	wg := sync.WaitGroup{}
+	wg.Add(3)
+	go func() {
+		wkbox := this.searchAliveClient()
+		wkbox.SetPara(&gameDS.RoomKey, gameDS)
+		wkbox.Preserve(false)
+		wg.Done()
+	}()
+	go func() {
+		wkbox := this.searchAliveClient()
+		key := gameDS.RoomKey + phaseMod.RdsKeyName()
+		wkbox.SetPara(&key, phaseMod)
+		wkbox.Preserve(false)
+		wg.Done()
+	}()
+	go func() {
+		wkbox := this.searchAliveClient()
+		key := gameDS.RoomKey + effectMod.RdsKeyName()
+		wkbox.SetPara(&key, effectMod)
+		wkbox.Preserve(false)
+		wg.Done()
+	}()
+	wg.Wait()
+
+	nextPhase, nextType := upnextEventPhase(phaseMod.EventPhase, phaseMod.HookType)
+	gameDS.EventPhase = nextPhase
+	gameDS.HookType = nextType
+	phaseMod.EventPhase = nextPhase
+	phaseMod.HookType = nextType
+	if phaseMod.HookType == pb.EventHookType_Proxy {
 		this.proxyHandle(gameDS, phaseMod, effectMod, snapMod)
-		break
+		return
 	}
+
 	// upshift the phase
-	this.upshiftPhase(gameDS, phaseMod, effectMod)
+	if b, _ := this.checkDeadFlaging(gameDS, phaseMod, effectMod); b {
+		this.proxyHandle(gameDS, phaseMod, effectMod, snapMod)
+	}
+	// non-proxy: move next again
+	this.moveNextPhase(gameDS, phaseMod, effectMod, snapMod)
+
 }
 
 // point calculate
@@ -165,7 +203,7 @@ func pointCalcute(inst *int32, orig *int32, value *int32) {
 	}
 }
 
-func (this *ULZGameDuelServiceBackend) upshiftPhase(
+func (this *ULZGameDuelServiceBackend) checkDeadFlaging(
 	gameSet *pb.GameDataSet,
 	phaseMod *pb.PhaseSnapMod,
 	effectMod *pb.EffectNodeSnapMod,
@@ -219,6 +257,7 @@ func (this *ULZGameDuelServiceBackend) upshiftPhase(
 				Msg:     fmt.Sprintf("HostCharIsDead"),
 				Command: pb.CastCmd_INSTANCE_STATUS_CHANGE,
 			})
+			EndGameFlag = true
 		}
 		wg.Done()
 	}()
@@ -235,6 +274,7 @@ func (this *ULZGameDuelServiceBackend) upshiftPhase(
 				Msg:     fmt.Sprintf("DuelCharIsDead"),
 				Command: pb.CastCmd_INSTANCE_STATUS_CHANGE,
 			})
+			EndGameFlag = true
 		}
 		wg.Done()
 	}()
@@ -242,17 +282,21 @@ func (this *ULZGameDuelServiceBackend) upshiftPhase(
 	// wg.Add(1)
 	if EndGameFlag {
 		gameSet.EventPhase = pb.EventHookPhase_gameset_end
-		gameSet.HookType = pb.EventHookType_Before
+		gameSet.HookType = pb.EventHookType_Proxy
+		phaseMod.EventPhase = pb.EventHookPhase_gameset_end
+		phaseMod.HookType = pb.EventHookType_Proxy
 	}
 	if ChangeFlag {
 		gameSet.EventPhase = pb.EventHookPhase_dead_chara_change_phase
-		gameSet.HookType = pb.EventHookType_Before
+		gameSet.HookType = pb.EventHookType_Proxy
+		phaseMod.EventPhase = pb.EventHookPhase_dead_chara_change_phase
+		phaseMod.HookType = pb.EventHookType_Proxy
 	}
 	//=================================================================
 
 	// --------------------------------------------------
 	// start shift-next
-	return false, nil
+	return EndGameFlag || ChangeFlag, nil
 }
 
 func isManualHandlePhase(in pb.EventHookPhase) bool {
@@ -272,19 +316,28 @@ func (this *ULZGameDuelServiceBackend) executeEffectNode(
 	stateMod *pb.PhaseSnapMod,
 	effectMod *pb.EffectNodeSnapMod,
 ) (*pb.GameDataSet, error) {
-	nextPhase, nextType := upnextEventPhase(stateMod.EventPhase, stateMod.HookType)
-	gameSet1, err := this.skillClient.EffectCalculateWrap(
-		gameSet.RoomKey,
-		&pb.EffectTiming{
-			EventPhase: stateMod.EventPhase,
-			HookType:   stateMod.HookType,
-		},
-		&pb.EffectTiming{
-			EventPhase: nextPhase,
-			HookType:   nextType,
-		},
-		gameSet,
-	)
+	nodelist := pb.NodeFilter(effectMod.PendingEf, func(v *pb.EffectResult) bool {
+		return v.TriggerTime.EventPhase == stateMod.EventPhase &&
+			v.TriggerTime.HookType == stateMod.HookType
+	})
+	gameSet1 := gameSet
+	var err error
+	if len(nodelist) > 0 {
+		nextPhase, nextType := upnextEventPhase(stateMod.EventPhase, stateMod.HookType)
+		gameSet1, err = this.skillClient.EffectCalculateWrap(
+			gameSet.RoomKey,
+			&pb.EffectTiming{
+				EventPhase: stateMod.EventPhase,
+				HookType:   stateMod.HookType,
+			},
+			&pb.EffectTiming{
+				EventPhase: nextPhase,
+				HookType:   nextType,
+			},
+			gameSet,
+		)
+		cleanEffectResult(stateMod.EventPhase, stateMod.HookType, effectMod)
+	}
 	fmt.Printf("updated gameSet %#v \n err?: %v\n", gameSet1, err)
 	return gameSet1, err
 }
@@ -343,4 +396,21 @@ func upnextEventPhase(
 		}
 	}
 	return
+}
+
+func cleanEffectResult(phase pb.EventHookPhase, ehType pb.EventHookType, ens *pb.EffectNodeSnapMod) {
+	var removeKey []int
+	pef := ens.PendingEf
+	for k, v := range ens.PendingEf {
+		if v.EndTime.EventPhase == phase && v.EndTime.HookType == ehType {
+			v.RemainCd--
+		}
+		if v.RemainCd == 0 {
+			removeKey = append(removeKey, k)
+		}
+	}
+	for _, v := range removeKey {
+		pef = append(pef[:v], pef[v+1:]...)
+	}
+	ens.PendingEf = pef
 }

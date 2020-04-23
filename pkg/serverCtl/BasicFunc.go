@@ -18,13 +18,13 @@ func (this *ULZGameDuelServiceBackend) CreateGame(ctx context.Context, req *pb.G
 	cm.PrintReqLog(ctx, "Create-Game", req)
 	start := time.Now()
 	this.mu.Lock()
-	wkbox := this.searchAliveClient()
+	// wkbox := this.searchAliveClient()
 	defer func() {
-		wkbox.Preserve(false)
 		this.mu.Unlock()
 		elapsed := time.Since(start)
 		log.Printf("Create-Game took %s", elapsed)
 	}()
+	wkbox := this.searchAliveClient()
 	l, err := (wkbox).ListRem(&req.RoomKey)
 	if err != nil {
 		log.Println(err)
@@ -38,6 +38,7 @@ func (this *ULZGameDuelServiceBackend) CreateGame(ctx context.Context, req *pb.G
 			return nil, status.Errorf(codes.NotFound, err.Error())
 		}
 		return &returner, status.Error(codes.AlreadyExists, "create-game,the room exist 1")
+		wkbox.Preserve(false)
 	}
 	gameSetKey := req.RoomKey
 	new_gameset := pb.GameDataSet{
@@ -65,6 +66,7 @@ func (this *ULZGameDuelServiceBackend) CreateGame(ctx context.Context, req *pb.G
 	if _, err := wkbox.SetPara(&gameSetKey, new_gameset); err != nil {
 		log.Println(err)
 		return nil, status.Errorf(codes.Internal, err.Error())
+		wkbox.Preserve(false)
 	}
 	wg := sync.WaitGroup{}
 	errCh := make(chan error)
@@ -74,24 +76,33 @@ func (this *ULZGameDuelServiceBackend) CreateGame(ctx context.Context, req *pb.G
 	wg.Add(6)
 	// Host-Event-Card-Deck
 	go func() {
-		tmpKey := req.RoomKey + ":HtEvtCrdDk"
-		if _, err := wkbox.SetPara(&tmpKey, new_gameset.HostCardDeck); err != nil {
+		mwkbox := this.searchAliveClient()
+		var set pb.EventCardListSet
+		set.Set = new_gameset.HostEventCardDeck
+		tmpKey := req.RoomKey + set.RdsKeyName(pb.PlayerSide_HOST)
+		if _, err := mwkbox.SetPara(&tmpKey, set); err != nil {
 			log.Println(err)
 			errCh <- status.Errorf(codes.Internal, err.Error())
 		}
+		mwkbox.Preserve(false)
 		wg.Done()
 	}()
 	// Duel-Event-Card-Deck
 	go func() {
-		tmpKey1 := req.RoomKey + ":DlEvtCrdDk"
-		if _, err := wkbox.SetPara(&tmpKey1, new_gameset.DuelCardDeck); err != nil {
+		mwkbox := this.searchAliveClient()
+		var set pb.EventCardListSet
+		set.Set = new_gameset.DuelEventCardDeck
+		tmpKey1 := req.RoomKey + set.RdsKeyName(pb.PlayerSide_DUELER)
+		if _, err := mwkbox.SetPara(&tmpKey1, set); err != nil {
 			panic(err)
 			errCh <- status.Errorf(codes.Internal, err.Error())
 		}
+		mwkbox.Preserve(false)
 		wg.Done()
 	}()
 	// PhaseSnapMod
 	go func() {
+		mwkbox := this.searchAliveClient()
 		phase_inst := pb.PhaseSnapMod{
 			Turns:       1,
 			EventPhase:  pb.EventHookPhase_gameset_start,
@@ -101,57 +112,64 @@ func (this *ULZGameDuelServiceBackend) CreateGame(ctx context.Context, req *pb.G
 		}
 		tmpKey := req.RoomKey + phase_inst.RdsKeyName()
 
-		if _, err := wkbox.SetPara(&tmpKey, phase_inst); err != nil {
+		if _, err := mwkbox.SetPara(&tmpKey, phase_inst); err != nil {
 			log.Println(err)
 			errCh <- status.Errorf(codes.Internal, err.Error())
 		}
+		mwkbox.Preserve(false)
 		wg.Done()
 	}()
 	// move-instance
 	go func() {
+		mwkbox := this.searchAliveClient()
 		move_instance := pb.MovePhaseSnapMod{
 			Turns: 0,
 		}
 		tmpKey2 := req.RoomKey + move_instance.RdsKeyName()
-		if _, err := wkbox.SetPara(&tmpKey2, move_instance); err != nil {
+		if _, err := mwkbox.SetPara(&tmpKey2, move_instance); err != nil {
 			log.Println(err)
 			errCh <- status.Errorf(codes.Internal, err.Error())
 		}
+		mwkbox.Preserve(false)
 		wg.Done()
 	}()
 	// ad-phase-instance
 	go func() {
+		mwkbox := this.searchAliveClient()
 		ad_instance := pb.ADPhaseSnapMod{
 			Turns:       0,
 			FirstAttack: 0,
 			EventPhase:  pb.EventHookPhase_start_turn_phase,
 		}
 		tmpKey3 := req.RoomKey + ad_instance.RdsKeyName()
-		if _, err := wkbox.SetPara(&tmpKey3, ad_instance); err != nil {
+		if _, err := mwkbox.SetPara(&tmpKey3, ad_instance); err != nil {
 			log.Println(err)
 			errCh <- status.Errorf(codes.Internal, err.Error())
 		}
+		mwkbox.Preserve(false)
 		wg.Done()
 	}()
 	//EffectNodeMod
 	go func() {
+		mwkbox := this.searchAliveClient()
 		ef_instance := pb.EffectNodeSnapMod{
 			Turns:     0,
 			PendingEf: nil,
 		}
 		tmpKey4 := req.RoomKey + ef_instance.RdsKeyName()
-		if _, err := wkbox.SetPara(&tmpKey4, ef_instance); err != nil {
+		if _, err := mwkbox.SetPara(&tmpKey4, ef_instance); err != nil {
 			log.Println(err)
 			errCh <- status.Errorf(codes.Internal, err.Error())
 			// return nil, status.Errorf(codes.Internal, err.Error())
 		}
+		mwkbox.Preserve(false)
 		wg.Done()
 	}()
 	wg.Wait()
 	if errRes := <-errCh; errRes != nil {
 		return nil, errRes
 	}
-
+	wkbox.Preserve(false)
 	return &new_gameset, nil
 }
 

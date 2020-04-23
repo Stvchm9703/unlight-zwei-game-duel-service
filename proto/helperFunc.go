@@ -65,3 +65,35 @@ func NodeFilter(vs []*EffectResult, f func(*EffectResult) bool) []*EffectResult 
 	}
 	return vsf
 }
+
+// EventCard filter
+func EventCardFilter(vs []*EventCard, f func(*EventCard) bool) []*EventCard {
+	vsf := make([]*EventCard, 0)
+	for _, v := range vs {
+		if f(v) {
+			vsf = append(vsf, v)
+		}
+	}
+	return vsf
+}
+
+type EventCardListSet struct {
+	Set []*EventCard `json:"set,omitempty"`
+}
+
+func (set *EventCardListSet) RdsKeyName(side PlayerSide) string {
+	if side == PlayerSide_HOST {
+		return ":HtEvtCrdDk"
+	} else if side == PlayerSide_DUELER {
+		return ":DlEvtCrdDk"
+	}
+	return ":EvtCrdDk"
+}
+
+func (card *EventCard) ToECShostHand() *ECShortHand {
+	return &ECShortHand{
+		CardId:   card.Id,
+		Position: card.Position,
+		IsInvert: card.IsInvert,
+	}
+}

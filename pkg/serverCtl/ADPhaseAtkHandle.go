@@ -57,7 +57,7 @@ func (this *ULZGameDuelServiceBackend) attackPhaseHandle(
 	// dfEff := effectMod.PendingEf
 	var addEff []*pb.EffectResult
 	var FixEff []*pb.EffectResult
-	wg.Add(2)
+	wg.Add(3)
 	go func() {
 		addEff = pb.NodeFilter(effectMod.PendingEf, func(v *pb.EffectResult) bool {
 			return (v.TriggerTime.EventPhase == pb.EventHookPhase_attack_card_drop_phase &&
@@ -80,8 +80,25 @@ func (this *ULZGameDuelServiceBackend) attackPhaseHandle(
 		})
 		wg.Done()
 	}()
+	isDisable := false
+	go func() {
+		Disable := pb.NodeFilter(effectMod.PendingEf, func(v *pb.EffectResult) bool {
+			return (v.TriggerTime.EventPhase == pb.EventHookPhase_attack_card_drop_phase &&
+				v.TriggerTime.HookType == pb.EventHookType_Proxy &&
+				v.TarSide == stateMod.CurrAttack &&
+				v.TarCard == currentAtkKey &&
+				v.DisableAtk)
+		})
+		if len(Disable) > 0 {
+			isDisable = true
+		}
+		wg.Done()
+	}()
 	wg.Wait()
-	if len(FixEff) > 0 {
+
+	if isDisable {
+		snapMod.AttackVal = 0
+	} else if len(FixEff) > 0 {
 		tmpAtk := int32(0)
 		for _, v := range FixEff {
 			if v.Ap > tmpAtk {

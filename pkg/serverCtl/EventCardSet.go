@@ -12,6 +12,7 @@ import (
 	"path"
 	"path/filepath"
 	"strconv"
+	"time"
 
 	"github.com/golang/protobuf/proto"
 )
@@ -222,10 +223,13 @@ func convCardFunc(inVal *string) (pb.EventCardFunc, int32) {
 	return pb.EventCardFunc_null, 0
 }
 
-func genCardSet(num int, cost_limit int) (out []*pb.EventCard) {
+func genCardSet(num int) (out []*pb.EventCard) {
+	nm := len(EventCardSetArr)
+	rand.Seed(int64(time.Now().UnixNano()))
 	for i := 0; i <= num; i++ {
-		rand.Seed(int64(cost_limit))
-		out = append(out, EventCardSetArr[rand.Intn(len(EventCardSetArr))])
+		out = append(
+			out,
+			EventCardSetArr[rand.Intn(nm)])
 	}
 	return
 }

@@ -148,22 +148,53 @@ func (this *ULZGameDuelServiceBackend) MovePhaseConfirm(ctx context.Context, req
 	// add instant mp
 	var addEff []*pb.EffectResult
 	var addVal int32
-	addEff = pb.NodeFilter(effectMod.PendingEf, func(v *pb.EffectResult) bool {
-		return (v.TriggerTime.EventPhase == pb.EventHookPhase_determine_move_phase &&
-			v.TriggerTime.HookType == pb.EventHookType_Proxy &&
-			v.EfOption == pb.EffectOption_Status_Addition &&
-			v.TarSide == req.Side &&
-			v.TarCard == currentAtkKey)
-	})
-	for _, v := range addEff {
-		addVal += v.Mp
+	wg.Add(2)
+	go func() {
+		addEff = pb.NodeFilter(effectMod.PendingEf, func(v *pb.EffectResult) bool {
+			return (v.TriggerTime.EventPhase == pb.EventHookPhase_move_card_drop_phase &&
+				v.TriggerTime.HookType == pb.EventHookType_Proxy &&
+				v.EfOption == pb.EffectOption_Status_Addition &&
+				v.TarSide == req.Side &&
+				v.TarCard == currentAtkKey)
+		})
+		for _, v := range addEff {
+			addVal += v.Mp
+		}
+		wg.Done()
+	}()
+	var fixEff []*pb.EffectResult
+	var fixVal int32
+	go func() {
+		fixEff = pb.NodeFilter(effectMod.PendingEf, func(v *pb.EffectResult) bool {
+			return (v.TriggerTime.EventPhase == pb.EventHookPhase_determine_move_phase &&
+				v.TriggerTime.HookType == pb.EventHookType_Proxy &&
+				v.EfOption == pb.EffectOption_Status_FixValue &&
+				v.TarSide == req.Side &&
+				v.TarCard == currentAtkKey)
+		})
+		for _, v := range fixEff {
+			if v.Ap > fixVal {
+				fixVal = v.Mp
+			}
+		}
+		wg.Done()
+	}()
+	wg.Wait()
+	if len(fixEff) > 0 {
+		if req.Side == pb.PlayerSide_HOST {
+			snapMove.HostVal = fixVal
+		} else if req.Side == pb.PlayerSide_DUELER {
+			snapMove.DuelVal = fixVal
+		}
+	} else {
+		if req.Side == pb.PlayerSide_HOST {
+			snapMove.HostVal += addVal
+		} else if req.Side == pb.PlayerSide_DUELER {
+			snapMove.DuelVal += addVal
+		}
 	}
 
-	if req.Side == pb.PlayerSide_HOST {
-		snapMove.HostVal += addVal
-	} else if req.Side == pb.PlayerSide_DUELER {
-		snapMove.DuelVal += addVal
-	}
+	// effectMod
 
 	// do snap-mod update
 	// wg.Add(1)
