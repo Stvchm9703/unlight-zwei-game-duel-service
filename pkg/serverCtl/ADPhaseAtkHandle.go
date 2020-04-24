@@ -117,8 +117,7 @@ func (this *ULZGameDuelServiceBackend) attackPhaseHandle(
 	wg.Add(2)
 	go func() {
 		wkbox := this.searchAliveClient()
-		var snapModkey = gameSet.RoomKey + snapMod.RdsKeyName()
-		if _, err := (wkbox).SetPara(&snapModkey, snapMod); err != nil {
+		if _, err := (wkbox).SetPara(gameSet.RoomKey+snapMod.RdsKeyName(), snapMod); err != nil {
 			log.Println(err)
 			errch <- err
 		}
@@ -126,8 +125,7 @@ func (this *ULZGameDuelServiceBackend) attackPhaseHandle(
 	}()
 	go func() {
 		wkbox := this.searchAliveClient()
-		var snapModkey = gameSet.RoomKey + snapMod.RdsKeyName()
-		if _, err := (wkbox).SetPara(&snapModkey, stateMod); err != nil {
+		if _, err := (wkbox).SetPara(gameSet.RoomKey+snapMod.RdsKeyName(), stateMod); err != nil {
 			log.Println(err)
 			errch <- err
 		}

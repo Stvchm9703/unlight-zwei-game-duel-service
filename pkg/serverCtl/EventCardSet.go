@@ -223,7 +223,7 @@ func convCardFunc(inVal *string) (pb.EventCardFunc, int32) {
 	return pb.EventCardFunc_null, 0
 }
 
-func genCardSet(num int) (out []*pb.EventCard) {
+func genCardSet(num int, costLimit int) (out []*pb.EventCard) {
 	nm := len(EventCardSetArr)
 	rand.Seed(int64(time.Now().UnixNano()))
 	for i := 0; i <= num; i++ {

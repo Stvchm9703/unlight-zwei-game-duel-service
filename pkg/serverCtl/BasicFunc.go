@@ -33,7 +33,7 @@ func (this *ULZGameDuelServiceBackend) CreateGame(ctx context.Context, req *pb.G
 	if len(*l) == 1 {
 		// room exist =1
 		var returner pb.GameDataSet
-		if _, err := (wkbox).GetPara(&req.RoomKey, &returner); err != nil {
+		if _, err := (wkbox).GetPara(req.RoomKey, &returner); err != nil {
 			log.Println(err)
 			return nil, status.Errorf(codes.NotFound, err.Error())
 		}
@@ -63,10 +63,10 @@ func (this *ULZGameDuelServiceBackend) CreateGame(ctx context.Context, req *pb.G
 	// new_gameset.HostEvent
 	// return nil, status.Error(codes.Unimplemented, "CREATE_GAME")
 	// Set Para
-	if _, err := wkbox.SetPara(&gameSetKey, new_gameset); err != nil {
+	if _, err := wkbox.SetPara(gameSetKey, new_gameset); err != nil {
 		log.Println(err)
-		return nil, status.Errorf(codes.Internal, err.Error())
 		wkbox.Preserve(false)
+		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	wg := sync.WaitGroup{}
 	errCh := make(chan error)
@@ -79,8 +79,7 @@ func (this *ULZGameDuelServiceBackend) CreateGame(ctx context.Context, req *pb.G
 		mwkbox := this.searchAliveClient()
 		var set pb.EventCardListSet
 		set.Set = new_gameset.HostEventCardDeck
-		tmpKey := req.RoomKey + set.RdsKeyName(pb.PlayerSide_HOST)
-		if _, err := mwkbox.SetPara(&tmpKey, set); err != nil {
+		if _, err := mwkbox.SetPara(req.RoomKey+set.RdsKeyName(pb.PlayerSide_HOST), set); err != nil {
 			log.Println(err)
 			errCh <- status.Errorf(codes.Internal, err.Error())
 		}
@@ -92,8 +91,7 @@ func (this *ULZGameDuelServiceBackend) CreateGame(ctx context.Context, req *pb.G
 		mwkbox := this.searchAliveClient()
 		var set pb.EventCardListSet
 		set.Set = new_gameset.DuelEventCardDeck
-		tmpKey1 := req.RoomKey + set.RdsKeyName(pb.PlayerSide_DUELER)
-		if _, err := mwkbox.SetPara(&tmpKey1, set); err != nil {
+		if _, err := mwkbox.SetPara(req.RoomKey+set.RdsKeyName(pb.PlayerSide_DUELER), set); err != nil {
 			panic(err)
 			errCh <- status.Errorf(codes.Internal, err.Error())
 		}
@@ -110,9 +108,8 @@ func (this *ULZGameDuelServiceBackend) CreateGame(ctx context.Context, req *pb.G
 			IsHostReady: false,
 			IsDuelReady: false,
 		}
-		tmpKey := req.RoomKey + phase_inst.RdsKeyName()
 
-		if _, err := mwkbox.SetPara(&tmpKey, phase_inst); err != nil {
+		if _, err := mwkbox.SetPara(req.RoomKey+phase_inst.RdsKeyName(), phase_inst); err != nil {
 			log.Println(err)
 			errCh <- status.Errorf(codes.Internal, err.Error())
 		}
@@ -125,8 +122,7 @@ func (this *ULZGameDuelServiceBackend) CreateGame(ctx context.Context, req *pb.G
 		move_instance := pb.MovePhaseSnapMod{
 			Turns: 0,
 		}
-		tmpKey2 := req.RoomKey + move_instance.RdsKeyName()
-		if _, err := mwkbox.SetPara(&tmpKey2, move_instance); err != nil {
+		if _, err := mwkbox.SetPara(req.RoomKey+move_instance.RdsKeyName(), move_instance); err != nil {
 			log.Println(err)
 			errCh <- status.Errorf(codes.Internal, err.Error())
 		}
@@ -141,8 +137,7 @@ func (this *ULZGameDuelServiceBackend) CreateGame(ctx context.Context, req *pb.G
 			FirstAttack: 0,
 			EventPhase:  pb.EventHookPhase_start_turn_phase,
 		}
-		tmpKey3 := req.RoomKey + ad_instance.RdsKeyName()
-		if _, err := mwkbox.SetPara(&tmpKey3, ad_instance); err != nil {
+		if _, err := mwkbox.SetPara(req.RoomKey+ad_instance.RdsKeyName(), ad_instance); err != nil {
 			log.Println(err)
 			errCh <- status.Errorf(codes.Internal, err.Error())
 		}
@@ -156,8 +151,8 @@ func (this *ULZGameDuelServiceBackend) CreateGame(ctx context.Context, req *pb.G
 			Turns:     0,
 			PendingEf: nil,
 		}
-		tmpKey4 := req.RoomKey + ef_instance.RdsKeyName()
-		if _, err := mwkbox.SetPara(&tmpKey4, ef_instance); err != nil {
+
+		if _, err := mwkbox.SetPara(req.RoomKey+ef_instance.RdsKeyName(), ef_instance); err != nil {
 			log.Println(err)
 			errCh <- status.Errorf(codes.Internal, err.Error())
 			// return nil, status.Errorf(codes.Internal, err.Error())
@@ -192,15 +187,14 @@ func (this *ULZGameDuelServiceBackend) GetGameData(ctx context.Context, req *pb.
 	errCh := make(chan error)
 	wg.Add(2)
 	go func() {
-		if _, err := wkbox.GetPara(&req.RoomKey, &tmp); err != nil {
+		if _, err := wkbox.GetPara(req.RoomKey, &tmp); err != nil {
 			log.Fatalln(err)
 			errCh <- status.Errorf(codes.Internal, err.Error())
 		}
 		wg.Done()
 	}()
 	go func() {
-		tmp := req.RoomKey + ":EfMod"
-		if _, err := wkbox.GetPara(&tmp, &eflist); err != nil {
+		if _, err := wkbox.GetPara(req.RoomKey+eflist.RdsKeyName(), &eflist); err != nil {
 			log.Fatalln(err)
 			errCh <- status.Errorf(codes.Internal, err.Error())
 		}

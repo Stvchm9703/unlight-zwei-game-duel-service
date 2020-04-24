@@ -40,7 +40,7 @@ func (this *ULZGameDuelServiceBackend) MovePhaseConfirm(ctx context.Context, req
 	var gameSetKey = req.RoomKey
 	go func() {
 		wkbox := this.searchAliveClient()
-		if _, err := (wkbox).GetPara(&gameSetKey, &gameSet); err != nil {
+		if _, err := (wkbox).GetPara(gameSetKey, &gameSet); err != nil {
 			log.Println(err)
 			errch <- err
 		}
@@ -52,7 +52,7 @@ func (this *ULZGameDuelServiceBackend) MovePhaseConfirm(ctx context.Context, req
 	var snapMovekey = req.RoomKey + snapMove.RdsKeyName()
 	go func() {
 		wkbox := this.searchAliveClient()
-		if _, err := (wkbox).GetPara(&snapMovekey, &snapMove); err != nil {
+		if _, err := (wkbox).GetPara(snapMovekey, &snapMove); err != nil {
 			log.Println(err)
 			errch <- err
 		}
@@ -64,7 +64,7 @@ func (this *ULZGameDuelServiceBackend) MovePhaseConfirm(ctx context.Context, req
 	snapPhasekey := req.RoomKey + snapPhase.RdsKeyName()
 	go func() {
 		wkbox := this.searchAliveClient()
-		if _, err := (wkbox).GetPara(&snapPhasekey, &snapMove); err != nil {
+		if _, err := (wkbox).GetPara(snapPhasekey, &snapMove); err != nil {
 			log.Println(err)
 			errch <- err
 		}
@@ -111,7 +111,7 @@ func (this *ULZGameDuelServiceBackend) MovePhaseConfirm(ctx context.Context, req
 	snapEfKey := req.RoomKey + effectMod.RdsKeyName()
 	go func() {
 		wkbox := this.searchAliveClient()
-		if _, err := (wkbox).GetPara(&snapEfKey, &effectMod); err != nil {
+		if _, err := (wkbox).GetPara(snapEfKey, &effectMod); err != nil {
 			log.Println(err)
 			errch <- err
 		}
@@ -203,7 +203,7 @@ func (this *ULZGameDuelServiceBackend) MovePhaseConfirm(ctx context.Context, req
 	wg.Add(3)
 	go func() {
 		wkbox := this.searchAliveClient()
-		if _, err := (wkbox).SetPara(&snapMovekey, snapMove); err != nil {
+		if _, err := (wkbox).SetPara(snapMovekey, snapMove); err != nil {
 			log.Println(err)
 			errch <- err
 		}
@@ -212,7 +212,7 @@ func (this *ULZGameDuelServiceBackend) MovePhaseConfirm(ctx context.Context, req
 	}()
 	go func() {
 		wkbox := this.searchAliveClient()
-		if _, err := (wkbox).SetPara(&snapPhasekey, snapPhase); err != nil {
+		if _, err := (wkbox).SetPara(snapPhasekey, snapPhase); err != nil {
 			log.Println(err)
 			errch <- err
 		}
@@ -221,7 +221,7 @@ func (this *ULZGameDuelServiceBackend) MovePhaseConfirm(ctx context.Context, req
 	}()
 	go func() {
 		wkbox := this.searchAliveClient()
-		if _, err := (wkbox).SetPara(&snapEfKey, effectMod); err != nil {
+		if _, err := (wkbox).SetPara(snapEfKey, effectMod); err != nil {
 			log.Println(err)
 			errch <- err
 		}
@@ -245,24 +245,22 @@ func (this *ULZGameDuelServiceBackend) MovePhaseConfirm(ctx context.Context, req
 		Side:         req.Side,
 		InstanceSet:  nil,
 	})
-
-	if snapPhase.IsHostReady && snapPhase.IsDuelReady {
-		go this.BroadCast(&pb.GDBroadcastResp{
-			RoomKey:      req.RoomKey,
-			Msg:          "Both Ready",
-			Command:      pb.CastCmd_GET_MOVE_PHASE_RESULT,
-			CurrentPhase: pb.EventHookPhase_move_card_drop_phase,
-			PhaseHook:    pb.EventHookType_Proxy,
-			InstanceSet:  nil,
-		})
-		// go store before move next
-
-		// both-ready; then move-next phase
-		go func() {
+	go func() {
+		if snapPhase.IsHostReady && snapPhase.IsDuelReady {
+			this.BroadCast(&pb.GDBroadcastResp{
+				RoomKey:      req.RoomKey,
+				Msg:          "Both Ready",
+				Command:      pb.CastCmd_GET_MOVE_PHASE_RESULT,
+				CurrentPhase: pb.EventHookPhase_move_card_drop_phase,
+				PhaseHook:    pb.EventHookType_Proxy,
+				InstanceSet:  nil,
+			})
+			// go store before move next
+			// both-ready; then move-next phase
 			mbox := this.searchAliveClient()
 			var gameDt pb.GameDataSet
-			mbox.GetPara(&req.RoomKey, &gameDt)
-			gameDt.HookType = pb.EventHookType_Proxy
+			mbox.GetPara(req.RoomKey, &gameDt)
+			// gameDt.HookType = pb.EventHookType_Proxy
 			mbox.Preserve(false)
 			this.moveNextPhase(
 				&gameDt,
@@ -270,8 +268,8 @@ func (this *ULZGameDuelServiceBackend) MovePhaseConfirm(ctx context.Context, req
 				&effectMod,
 				&snapMove,
 			)
-		}()
-	}
+		}
+	}()
 	return &pb.Empty{}, nil
 
 }
@@ -309,7 +307,7 @@ func (this *ULZGameDuelServiceBackend) MovePhaseConfirm(ctx context.Context, req
  */
 
 //  MovePhaseResult :
-// remark it should from determine-move-
+// remark it should from finish_move_phase:proxy
 func (this *ULZGameDuelServiceBackend) MovePhaseResult(ctx context.Context, req *pb.GDGetInfoReq) (*pb.GDMoveConfirmResp, error) {
 	cm.PrintReqLog(ctx, "Move-Phase-Result", req)
 	start := time.Now()
@@ -330,8 +328,7 @@ func (this *ULZGameDuelServiceBackend) MovePhaseResult(ctx context.Context, req 
 	errch := make(chan error)
 	wg.Add(2)
 	go func() {
-		snapMovekey := req.RoomKey + snapMove.RdsKeyName()
-		if _, err := (wkbox).GetPara(&snapMovekey, &snapMove); err != nil {
+		if _, err := (wkbox).GetPara(req.RoomKey+snapMove.RdsKeyName(), &snapMove); err != nil {
 			log.Println(err)
 			errch <- status.Errorf(codes.NotFound, err.Error())
 		}
@@ -339,9 +336,8 @@ func (this *ULZGameDuelServiceBackend) MovePhaseResult(ctx context.Context, req 
 	}()
 
 	go func() {
-		snapMovekey := req.RoomKey + movePhase.RdsKeyName()
 		wkbox1 := this.searchAliveClient()
-		if _, err := (wkbox1).GetPara(&snapMovekey, &movePhase); err != nil {
+		if _, err := (wkbox1).GetPara(req.RoomKey+movePhase.RdsKeyName(), &movePhase); err != nil {
 			log.Println(err)
 			errch <- status.Errorf(codes.NotFound, err.Error())
 		}
@@ -354,9 +350,9 @@ func (this *ULZGameDuelServiceBackend) MovePhaseResult(ctx context.Context, req 
 
 	go func() {
 		if !req.IsWatcher {
-			snapMovekey := req.RoomKey + PhaseMod.RdsKeyName()
+
 			wkbox1 := this.searchAliveClient()
-			if _, err := (wkbox1).GetPara(&snapMovekey, &PhaseMod); err != nil {
+			if _, err := (wkbox1).GetPara(req.RoomKey+PhaseMod.RdsKeyName(), &PhaseMod); err != nil {
 				log.Println(err)
 			}
 			if req.Side == pb.PlayerSide_HOST {
@@ -364,21 +360,28 @@ func (this *ULZGameDuelServiceBackend) MovePhaseResult(ctx context.Context, req 
 			} else if req.Side == pb.PlayerSide_DUELER {
 				PhaseMod.IsDuelReady = true
 			}
-			(wkbox1).SetPara(&snapMovekey, PhaseMod)
+			(wkbox1).SetPara(req.RoomKey+PhaseMod.RdsKeyName(), PhaseMod)
 			if PhaseMod.IsHostReady && PhaseMod.IsDuelReady {
 				go this.BroadCast(&pb.GDBroadcastResp{
 					RoomKey:      req.RoomKey,
-					Msg:          fmt.Sprintf("MV_PHASE:ACK_Both_Side_Resolve:"),
-					Command:      pb.CastCmd_GET_MOVE_PHASE_RESULT,
-					CurrentPhase: pb.EventHookPhase_determine_move_phase,
+					Msg:          fmt.Sprintf("MV_PHASE:ACK_Both_Side_Resolve:%s,AtkFirst", PhaseMod.FirstAttack.String()),
+					Command:      pb.CastCmd_INSTANCE_STATUS_CHANGE,
+					CurrentPhase: pb.EventHookPhase_finish_move_phase,
 					PhaseHook:    pb.EventHookType_Proxy,
 				})
 
 				var gamDT pb.GameDataSet
-				wkbox1.GetPara(&req.RoomKey, &gamDT)
+				wkbox1.GetPara(req.RoomKey, &gamDT)
+				var effectMod pb.EffectNodeSnapMod
+				wkbox1.GetPara(req.RoomKey+effectMod.RdsKeyName(), effectMod)
 				wkbox1.Preserve(false)
+
 				// suppose (gamDT.EventPhase == PhaseMod.EventPhase) === pb.determine
 				// gamDT.EventPhase = PhaseMod.EventPhase
+				this.moveNextPhase(
+					&gamDT,
+					&PhaseMod,
+					&effectMod)
 			}
 		}
 	}()

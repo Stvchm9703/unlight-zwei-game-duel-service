@@ -194,12 +194,11 @@ func (this *ULZGameDuelServiceBackend) phaseTrigEf(
 	wkbox := this.searchAliveClient()
 	wg.Add(2)
 	go func() {
-		wkbox.SetPara(&gameDS.RoomKey, gameDS)
+		wkbox.SetPara(gameDS.RoomKey, gameDS)
 		wg.Done()
 	}()
 	go func() {
-		searchKey := gameDS.RoomKey + effectMod.RdsKeyName()
-		wkbox.SetPara(&searchKey, effectMod)
+		wkbox.SetPara(gameDS.RoomKey+effectMod.RdsKeyName(), effectMod)
 		wg.Done()
 	}()
 	wg.Wait()

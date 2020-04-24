@@ -90,7 +90,7 @@ func (this *ULZGameDuelServiceBackend) ADPhaseConfirm(
 	var returner pb.GameDataSet
 	go func() {
 		wkbox := this.searchAliveClient()
-		if _, err := (wkbox).GetPara(&req.RoomKey, &returner); err != nil {
+		if _, err := (wkbox).GetPara(req.RoomKey, &returner); err != nil {
 			log.Println(err)
 			errCh <- status.Errorf(codes.NotFound, err.Error())
 		}
@@ -103,7 +103,7 @@ func (this *ULZGameDuelServiceBackend) ADPhaseConfirm(
 	snapModkey := req.RoomKey + snapMod.RdsKeyName()
 	go func() {
 		wkbox := this.searchAliveClient()
-		if _, err := (wkbox).GetPara(&snapModkey, &snapMod); err != nil {
+		if _, err := (wkbox).GetPara(snapModkey, &snapMod); err != nil {
 			log.Println(err)
 			errCh <- status.Errorf(codes.NotFound, err.Error())
 		}
@@ -115,8 +115,7 @@ func (this *ULZGameDuelServiceBackend) ADPhaseConfirm(
 	var phaseInst pb.PhaseSnapMod
 	go func() {
 		wkbox := this.searchAliveClient()
-		tmpKey := req.RoomKey + phaseInst.RdsKeyName()
-		if _, err := wkbox.GetPara(&tmpKey, &phaseInst); err != nil {
+		if _, err := wkbox.GetPara(req.RoomKey+phaseInst.RdsKeyName(), &phaseInst); err != nil {
 			log.Println(err)
 			errCh <- status.Errorf(codes.Internal, err.Error())
 		}
@@ -128,8 +127,7 @@ func (this *ULZGameDuelServiceBackend) ADPhaseConfirm(
 	var effectNode pb.EffectNodeSnapMod
 	go func() {
 		wkbox := this.searchAliveClient()
-		tmpKey := req.RoomKey + effectNode.RdsKeyName()
-		if _, err := wkbox.GetPara(&tmpKey, &phaseInst); err != nil {
+		if _, err := wkbox.GetPara(req.RoomKey+effectNode.RdsKeyName(), &phaseInst); err != nil {
 			log.Println(err)
 			errCh <- status.Errorf(codes.Internal, err.Error())
 		}
@@ -162,7 +160,7 @@ func (this *ULZGameDuelServiceBackend) ADPhaseConfirm(
 		snapMod.AttackTrigSkl = req.TriggerSkl
 		go func() {
 			wkbox := this.searchAliveClient()
-			if _, err := (wkbox).SetPara(&snapModkey, snapMod); err != nil {
+			if _, err := (wkbox).SetPara(snapModkey, snapMod); err != nil {
 				log.Println(err)
 			}
 			wkbox.Preserve(false)
@@ -173,7 +171,7 @@ func (this *ULZGameDuelServiceBackend) ADPhaseConfirm(
 				&phaseInst,
 				&effectNode,
 			)
-			phaseInst.HookType = pb.EventHookType_After
+			// phaseInst.HookType = pb.EventHookType_After
 			this.moveNextPhase(
 				&returner,
 				&phaseInst,
@@ -187,7 +185,7 @@ func (this *ULZGameDuelServiceBackend) ADPhaseConfirm(
 		snapMod.DefenceTrigSkl = req.TriggerSkl
 		go func() {
 			wkbox := this.searchAliveClient()
-			if _, err := (wkbox).SetPara(&snapModkey, snapMod); err != nil {
+			if _, err := (wkbox).SetPara(snapModkey, snapMod); err != nil {
 				log.Println(err)
 			}
 			wkbox.Preserve(false)
@@ -197,7 +195,7 @@ func (this *ULZGameDuelServiceBackend) ADPhaseConfirm(
 				&phaseInst,
 				&effectNode,
 			)
-			phaseInst.HookType = pb.EventHookType_After
+			// phaseInst.HookType = pb.EventHookType_After
 			this.moveNextPhase(
 				&returner,
 				&phaseInst,
@@ -231,7 +229,7 @@ func (this *ULZGameDuelServiceBackend) ADPhaseResult(ctx context.Context, req *p
 	wg.Add(2)
 	go func() {
 		wkbox := this.searchAliveClient()
-		if _, err := (wkbox).GetPara(&snapModkey, &snapMod); err != nil {
+		if _, err := (wkbox).GetPara(snapModkey, &snapMod); err != nil {
 			log.Println(err)
 			errCh <- status.Errorf(codes.Internal, err.Error())
 		}
@@ -240,7 +238,7 @@ func (this *ULZGameDuelServiceBackend) ADPhaseResult(ctx context.Context, req *p
 	}()
 	go func() {
 		wkbox := this.searchAliveClient()
-		if _, err := (wkbox).GetPara(&stateModkey, &stateMod); err != nil {
+		if _, err := (wkbox).GetPara(stateModkey, &stateMod); err != nil {
 			log.Println(err)
 			errCh <- status.Errorf(codes.Internal, err.Error())
 		}
@@ -281,7 +279,7 @@ func (this *ULZGameDuelServiceBackend) ADPhaseResult(ctx context.Context, req *p
 	}
 	go func() {
 		wkbox := this.searchAliveClient()
-		(wkbox).SetPara(&stateModkey, stateMod)
+		(wkbox).SetPara(stateModkey, stateMod)
 		wkbox.Preserve(false)
 	}()
 
@@ -298,15 +296,14 @@ func (this *ULZGameDuelServiceBackend) ADPhaseResult(ctx context.Context, req *p
 		var gamDT pb.GameDataSet
 		go func() {
 			wkbox1 := this.searchAliveClient()
-			wkbox1.GetPara(&req.RoomKey, &gamDT)
+			wkbox1.GetPara(req.RoomKey, &gamDT)
 			wkbox1.Preserve(false)
 			wg.Done()
 		}()
 		var effMod pb.EffectNodeSnapMod
 		go func() {
-			efmodkey := req.RoomKey + effMod.RdsKeyName()
 			wkbox1 := this.searchAliveClient()
-			wkbox1.GetPara(&efmodkey, &effMod)
+			wkbox1.GetPara(req.RoomKey+effMod.RdsKeyName(), &effMod)
 			wkbox1.Preserve(false)
 			wg.Done()
 		}()

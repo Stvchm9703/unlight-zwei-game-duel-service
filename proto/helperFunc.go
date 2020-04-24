@@ -97,3 +97,11 @@ func (card *EventCard) ToECShostHand() *ECShortHand {
 		IsInvert: card.IsInvert,
 	}
 }
+
+func (set *EventCardListSet) ECListMoveTo(fromPos EventCardPos, toPos EventCardPos) {
+	for _, v := range set.Set {
+		if v.Position == fromPos {
+			v.Position = toPos
+		}
+	}
+}

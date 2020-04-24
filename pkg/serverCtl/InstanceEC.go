@@ -44,20 +44,14 @@ func (this *ULZGameDuelServiceBackend) InstSetEventCard(ctx context.Context, req
 		InstanceSet:  req.UpdateCard,
 	})
 
-	var tmpSet []pb.EventCard
-	ky := req.RoomKey
-	if req.Side == pb.PlayerSide_HOST {
-		ky = req.RoomKey + ":HtEvtCrdDk"
-	} else if req.Side == pb.PlayerSide_DUELER {
-		ky = req.RoomKey + ":DlEvtCrdDk"
-	}
-	if _, err := wkbox.GetPara(&ky, &tmpSet); err != nil {
+	var tmpSet pb.EventCardListSet
+	if _, err := wkbox.GetPara(req.RoomKey+tmpSet.RdsKeyName(req.Side), &tmpSet); err != nil {
 		log.Fatalln(err)
 		return nil, status.Errorf(codes.NotFound, err.Error())
 	}
 	wg := sync.WaitGroup{}
 
-	for _, v := range tmpSet {
+	for _, v := range tmpSet.Set {
 		wg.Add(1)
 		go func() {
 			for _, vk := range req.UpdateCard {
@@ -70,7 +64,7 @@ func (this *ULZGameDuelServiceBackend) InstSetEventCard(ctx context.Context, req
 			wg.Done()
 		}()
 	}
-	if _, err := wkbox.SetPara(&ky, tmpSet); err != nil {
+	if _, err := wkbox.SetPara(req.RoomKey+tmpSet.RdsKeyName(req.Side), tmpSet); err != nil {
 		log.Println(err)
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}

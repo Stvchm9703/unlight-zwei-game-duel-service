@@ -80,21 +80,37 @@ func (this *ULZGameDuelServiceBackend) determineMovePhaseHandle(
 	gameSet.Range = distance
 	gameSet.FirstAttack = domain
 	gameSet.CurrPhase = domain
+
+	if moveMod.HostOpt == pb.MovePhaseOpt_STAY {
+		gameSet.HostCardDeck[gameSet.HostCurrCardKey].HpInst++
+	}
+	if moveMod.DuelOpt == pb.MovePhaseOpt_STAY {
+		gameSet.DuelCardDeck[gameSet.DuelCurrCardKey].HpInst++
+	}
+
 	fmt.Printf("Range:%s, FirstAttack: %s", distance.String(), domain.String())
 
 	//
-	this.executeEffectNode(gameSet, stateMod, effectMod)
-
-	upphaseEffectResult(
+	// this.executeEffectNode(gameSet, stateMod, effectMod)
+	cleanEffectResult(
 		pb.EventHookPhase_determine_move_phase,
 		pb.EventHookType_Proxy,
 		effectMod,
 	)
+
+	// this.proxyHandle(gameSet *pb.GameDataSet, phaseMod *pb.PhaseSnapMod, effectMod *pb.EffectNodeSnapMod, snapMod ...interface{})
+
+	go func() {
+		wkbox := this.searchAliveClient()
+		if _, err := (wkbox).SetPara(gameSet.RoomKey, gameSet); err != nil {
+			log.Println(err)
+		}
+		wkbox.Preserve(false)
+	}()
 	// real act
 	go func() {
 		wkbox := this.searchAliveClient()
-		snapModkey := gameSet.RoomKey + moveMod.RdsKeyName()
-		if _, err := (wkbox).SetPara(&snapModkey, moveMod); err != nil {
+		if _, err := (wkbox).SetPara(gameSet.RoomKey+moveMod.RdsKeyName(), moveMod); err != nil {
 			log.Println(err)
 		}
 		wkbox.Preserve(false)
@@ -102,20 +118,12 @@ func (this *ULZGameDuelServiceBackend) determineMovePhaseHandle(
 
 	go func() {
 		mbox := this.searchAliveClient()
-		efKey := gameSet.RoomKey + effectMod.RdsKeyName()
-		if _, err := (mbox).SetPara(&efKey, effectMod); err != nil {
+		if _, err := (mbox).SetPara(gameSet.RoomKey+effectMod.RdsKeyName(), effectMod); err != nil {
 			log.Println(err)
 		}
 		mbox.Preserve(false)
 	}()
 	// send ok message
-	go this.BroadCast(&pb.GDBroadcastResp{
-		RoomKey:      gameSet.RoomKey,
-		Msg:          fmt.Sprintf("MOVE:MOVE_RESULT:"),
-		Command:      pb.CastCmd_GET_MOVE_PHASE_RESULT,
-		CurrentPhase: pb.EventHookPhase_determine_move_phase,
-		PhaseHook:    pb.EventHookType_Proxy,
-	})
 
 }
 func _effectCheckForMovePhase(

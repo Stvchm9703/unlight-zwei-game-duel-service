@@ -259,10 +259,10 @@ func (rc *RdsCliBox) ForceClear() (bool, error) {
 }
 
 // GetPara : get the value by key
-func (rc *RdsCliBox) GetPara(key *string, target interface{}) (*interface{}, error) {
+func (rc *RdsCliBox) GetPara(key string, target interface{}) (*interface{}, error) {
 	rc.lock()
 	defer rc.unlock()
-	keystr := rc.CoreKey + "/_" + rc.Key + "." + *key
+	keystr := rc.CoreKey + "/_" + rc.Key + "." + key
 	res, err := rc.conn.Get(keystr).Result()
 	if err != nil {
 		return nil, err
@@ -287,10 +287,10 @@ func (rc *RdsCliBox) GetPara(key *string, target interface{}) (*interface{}, err
 }
 
 // SetPara : set the key-value
-func (rc *RdsCliBox) SetPara(key *string, value interface{}) (bool, error) {
+func (rc *RdsCliBox) SetPara(key string, value interface{}) (bool, error) {
 	rc.lock()
 	defer rc.unlock()
-	keystr := rc.CoreKey + "/_" + rc.Key + "." + *key
+	keystr := rc.CoreKey + "/_" + rc.Key + "." + key
 	var jsonFormat []byte
 	var err error
 	if v := reflect.ValueOf(value); v.Kind() == reflect.Ptr {

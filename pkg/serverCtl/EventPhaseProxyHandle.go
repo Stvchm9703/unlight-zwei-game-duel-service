@@ -25,10 +25,14 @@ func (this *ULZGameDuelServiceBackend) proxyHandle(
 	case pb.EventHookPhase_start_turn_phase:
 		this.startTurnPhase(gameSet)
 		break
+
+	// draw-phase
 	case pb.EventHookPhase_refill_action_card_phase:
-		this.refillActionCard(gameSet)
+		this.refillActionCard(gameSet, phaseMod, effectMod)
 		break
-	// case pb.EventHookPhase_move_card_drop_phase:
+
+	// move-phase
+	case pb.EventHookPhase_move_card_drop_phase:
 	// 		this.moveCardDropPhase(gameSet)
 	// 		break
 	case pb.EventHookPhase_determine_move_phase:
@@ -36,34 +40,45 @@ func (this *ULZGameDuelServiceBackend) proxyHandle(
 		this.determineMovePhaseHandle(gameSet, phaseMod, effectMod, snapMovMod)
 		break
 	case pb.EventHookPhase_finish_move_phase:
-		this.finishMovePhase(gameSet)
+		snapMovMod, _ := snapMod[0].(*pb.MovePhaseSnapMod)
+		this.finishMovePhase(gameSet, phaseMod, effectMod, snapMovMod)
 		break
+
+	// char-change-phase
 	case pb.EventHookPhase_chara_change_phase:
 		// this.charaChangePhase(gameSet)
 		break
 	case pb.EventHookPhase_determine_chara_change_phase:
-		//
+		break
+
+	//	attack-phase
 	// case pb.EventHookPhase_attack_card_drop_phase:
 	// 		snapADMod, _ := snapMod[0].(*pb.ADPhaseSnapMod)
 	// 		this.attackPhaseHandle(gameSet, snapADMod, phaseMod, effectMod)
 	// 		break
+
+	// 	defence-phase
 	// case pb.EventHookPhase_defence_card_drop_phase:
 	// 		snapADMod, _ := snapMod[0].(*pb.ADPhaseSnapMod)
 	// 		this.defencePhaseHandle(gameSet, snapADMod, phaseMod, effectMod)
 	// 		break
-	case pb.EventHookPhase_determine_battle_point_phase:
 
+	case pb.EventHookPhase_determine_battle_point_phase:
+		// see also : battlePhase.go
+		snapADMod, _ := snapMod[0].(*pb.ADPhaseSnapMod)
+		this.determineBattlePointPhase(gameSet, phaseMod, effectMod, snapADMod)
 	case pb.EventHookPhase_battle_result_phase:
+		// see also : battlePhase.go
 		snapADMod, _ := snapMod[0].(*pb.ADPhaseSnapMod)
 		this.battlePhaseHandle(gameSet, phaseMod, effectMod, snapADMod)
-
 	case pb.EventHookPhase_damage_phase:
+		// see also : battlePhase.go
 
 	case pb.EventHookPhase_dead_chara_change_phase:
-
 	case pb.EventHookPhase_determine_dead_chara_change_phase:
 
 	case pb.EventHookPhase_change_initiative_phase:
+		this.changeInitiativePhase(gameSet)
 
 	case pb.EventHookPhase_finish_turn_phase:
 
@@ -113,7 +128,7 @@ func (this *ULZGameDuelServiceBackend) refillActionCard(
 	go func() {
 		wkbox := this.searchAliveClient()
 		key := gameSet.RoomKey + hostECInStore.RdsKeyName(pb.PlayerSide_HOST)
-		if _, err := (wkbox).GetPara(&key, &hostECInStore); err != nil {
+		if _, err := (wkbox).GetPara(key, &hostECInStore); err != nil {
 			errch <- err
 		}
 		inDeck := pb.EventCardFilter(hostECInStore.Set, func(v *pb.EventCard) bool {
@@ -158,7 +173,7 @@ func (this *ULZGameDuelServiceBackend) refillActionCard(
 			}
 		}
 
-		if _, err := (wkbox).SetPara(&key, hostECInStore); err != nil {
+		if _, err := (wkbox).SetPara(key, hostECInStore); err != nil {
 			errch <- err
 		}
 		wg.Done()
@@ -166,7 +181,7 @@ func (this *ULZGameDuelServiceBackend) refillActionCard(
 	go func() {
 		wkbox := this.searchAliveClient()
 		key := gameSet.RoomKey + duelECInStore.RdsKeyName(pb.PlayerSide_DUELER)
-		if _, err := (wkbox).GetPara(&key, &duelECInStore); err != nil {
+		if _, err := (wkbox).GetPara(key, &duelECInStore); err != nil {
 			errch <- err
 		}
 		inDeck := pb.EventCardFilter(duelECInStore.Set, func(v *pb.EventCard) bool {
@@ -210,7 +225,7 @@ func (this *ULZGameDuelServiceBackend) refillActionCard(
 				}
 			}
 		}
-		if _, err := (wkbox).SetPara(&key, duelECInStore); err != nil {
+		if _, err := (wkbox).SetPara(key, duelECInStore); err != nil {
 			errch <- err
 		}
 		wg.Done()
@@ -257,17 +272,90 @@ func (this *ULZGameDuelServiceBackend) refillActionCard(
 		})
 	}
 	log.Println("End of Draw Card proxy")
-
+	/**
+	 * since the effect-node will done by executeEffectNode in move-next-phase
+	 */
 }
-func (this *ULZGameDuelServiceBackend) determineMovePhase(gameSet *pb.GameDataSet) {
 
+func (this *ULZGameDuelServiceBackend) finishMovePhase(
+	gameSet *pb.GameDataSet,
+	phaseMod *pb.PhaseSnapMod,
+	effectMod *pb.EffectNodeSnapMod,
+	snapMovMod *pb.MovePhaseSnapMod,
+) {
+	hostHp, duelHp := int32(0), int32(0)
+	if snapMovMod.HostOpt == pb.MovePhaseOpt_STAY {
+		hostHp = 1
+	}
+	if snapMovMod.DuelOpt == pb.MovePhaseOpt_STAY {
+		duelHp = 1
+	}
+	mvResult := pb.GDMoveConfirmResp{
+		RoomKey:      gameSet.RoomKey,
+		ResultRange:  gameSet.Range,
+		HostCurrCard: gameSet.HostCurrCardKey,
+		DuelCurrCard: gameSet.DuelCurrCardKey,
+		HostHp:       hostHp,
+		DuelHp:       duelHp,
+	}
+	var hostECInStore, duelECInStore pb.EventCardListSet
+	wg := sync.WaitGroup{}
+	wg.Add(4)
+	errch := make(chan error)
+	go func() {
+		key := gameSet.RoomKey + mvResult.RdsKeyName()
+		wkbox := this.searchAliveClient()
+		wkbox.SetPara(key, mvResult)
+		wkbox.Preserve(false)
+		wg.Done()
+	}()
+	go func() {
+		wkbox := this.searchAliveClient()
+		key := gameSet.RoomKey + hostECInStore.RdsKeyName(pb.PlayerSide_HOST)
+		if _, err := (wkbox).GetPara(key, &hostECInStore); err != nil {
+			errch <- err
+		}
+		hostECInStore.ECListMoveTo(pb.EventCardPos_OUTSIDE, pb.EventCardPos_DESTROY)
+		if _, err := (wkbox).SetPara(key, hostECInStore); err != nil {
+			errch <- err
+		}
+		wg.Done()
+	}()
+	go func() {
+		wkbox := this.searchAliveClient()
+		key := gameSet.RoomKey + duelECInStore.RdsKeyName(pb.PlayerSide_DUELER)
+		if _, err := (wkbox).GetPara(key, &duelECInStore); err != nil {
+			errch <- err
+		}
+		duelECInStore.ECListMoveTo(pb.EventCardPos_OUTSIDE, pb.EventCardPos_DESTROY)
+		if _, err := (wkbox).SetPara(key, duelECInStore); err != nil {
+			errch <- err
+		}
+		wg.Done()
+	}()
+	go func() {
+		wkbox := this.searchAliveClient()
+		var admod pb.ADPhaseSnapMod
+		if _, err := wkbox.GetPara(gameSet.RoomKey+admod.RdsKeyName(), &admod); err != nil {
+			errch <- err
+		}
+		admod.CurrAttacker = gameSet.FirstAttack
+		admod.FirstAttack = gameSet.FirstAttack
+		if _, err := (wkbox).SetPara(gameSet.RoomKey+admod.RdsKeyName(), admod); err != nil {
+			errch <- err
+		}
+		wg.Done()
+	}()
+	wg.Wait()
+	this.BroadCast(&pb.GDBroadcastResp{
+		RoomKey:      gameSet.RoomKey,
+		Msg:          fmt.Sprintf("MOVE:MOVE_RESULT:"),
+		Command:      pb.CastCmd_GET_MOVE_PHASE_RESULT,
+		CurrentPhase: pb.EventHookPhase_finish_move_phase,
+		PhaseHook:    pb.EventHookType_Proxy,
+	})
+	log.Println("end of finish-move-phase")
 }
-
-func (this *ULZGameDuelServiceBackend) finishMovePhase(gameSet *pb.GameDataSet) {}
-
-func (this *ULZGameDuelServiceBackend) determineBattlePointPhase(gameSet *pb.GameDataSet) {}
-
-func (this *ULZGameDuelServiceBackend) damageResultPhase(gameSet *pb.GameDataSet) {}
 
 func (this *ULZGameDuelServiceBackend) deadCharaChangePhase(gameSet *pb.GameDataSet) {}
 

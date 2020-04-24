@@ -30,8 +30,7 @@ func (this *ULZGameDuelServiceBackend) DrawPhaseConfirm(ctx context.Context, req
 	// change
 	var returner pb.PhaseSnapMod
 	// go func() {}()
-	phaseSnapKey := req.RoomKey + ":PhaseState"
-	if _, err := (wkbox).GetPara(&phaseSnapKey, &returner); err != nil {
+	if _, err := (wkbox).GetPara(req.RoomKey+returner.RdsKeyName(), &returner); err != nil {
 		log.Println(err)
 		return nil, status.Errorf(codes.NotFound, err.Error())
 	}
@@ -63,13 +62,7 @@ func (this *ULZGameDuelServiceBackend) DrawPhaseConfirm(ctx context.Context, req
 		Side:         req.Side,
 		InstanceSet:  nil,
 	})
-	errch := make(chan error)
-	go func() {
-		if _, err := wkbox.SetPara(&req.RoomKey, returner); err != nil {
-			errch <- status.Error(codes.Internal, err.Error())
-		}
-	}()
-	if err := <-errch; err != nil {
+	if _, err := wkbox.SetPara(req.RoomKey+returner.RdsKeyName(), returner); err != nil {
 		return nil, err
 	}
 	log.Println("ACK-msg")

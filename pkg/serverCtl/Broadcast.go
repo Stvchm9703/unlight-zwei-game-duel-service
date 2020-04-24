@@ -65,7 +65,7 @@ func serveWs(rsb *ULZGameDuelServiceBackend, hub *ws.SocketHub, c *gin.Context) 
 
 	var tmp pb.GameDataSet
 	wkbox := rsb.searchAliveClient()
-	if _, err := wkbox.GetPara(&reqKey, &tmp); err != nil {
+	if _, err := wkbox.GetPara(reqKey, &tmp); err != nil {
 		c.AbortWithStatus(412)
 	}
 	client := ws.NewClient(reqKey, hub, conn)
