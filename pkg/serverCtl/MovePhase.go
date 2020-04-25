@@ -105,95 +105,75 @@ func (this *ULZGameDuelServiceBackend) MovePhaseConfirm(ctx context.Context, req
 	var Eff []*pb.EffectResult
 	var Val *int32
 	var err error
-
-	DisableSkill := pb.NodeFilter(effectMod.PendingEf, func(v *pb.EffectResult) bool {
-	})
-
-	Val, Eff, err = this.skillClient.SkillCalculateWrap(
-		req.UpdateCard,
-		req.TriggerSkl,
-		pb.EventCardType_MOVE,
-	)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-	// ======================================================================
 	var currentAtkKey int32
 	if req.Side == pb.PlayerSide_HOST {
+		currentAtkKey = gameSet.HostCurrCardKey
 		snapMove.HostOpt = req.MoveOpt
 		snapMove.HostTrigSkl = req.TriggerSkl
 		snapMove.HostCard = req.UpdateCard
-		snapMove.HostVal = *Val
-		// snapPhase
-		snapPhase.IsHostReady = true
-		currentAtkKey = gameSet.HostCurrCardKey
-
 	} else if req.Side == pb.PlayerSide_DUELER {
+		currentAtkKey = gameSet.DuelCurrCardKey
 		snapMove.DuelOpt = req.MoveOpt
 		snapMove.DuelTrigSkl = req.TriggerSkl
 		snapMove.DuelCard = req.UpdateCard
-		// snapPhase
-		snapMove.DuelVal = *Val
-		snapPhase.IsDuelReady = true
-		currentAtkKey = gameSet.DuelCurrCardKey
 	}
+	// disabl-skill checking
+	DisableSkill := pb.NodeFilter(effectMod.PendingEf, func(v *pb.EffectResult) bool {
+		return (v.TriggerTime.EventPhase == pb.EventHookPhase_attack_card_drop_phase &&
+			v.TriggerTime.HookType == pb.EventHookType_Proxy &&
+			v.TarSide == req.Side &&
+			v.TarCard == currentAtkKey &&
+			(v.StatusId == 10 || v.StatusId == 28))
+	})
+
+	if len(DisableSkill) == 0 {
+		Val, Eff, err = this.skillClient.SkillCalculateWrap(
+			req.UpdateCard,
+			req.TriggerSkl,
+			pb.EventCardType_MOVE,
+		)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+	} else {
+		Val = &req.Point
+	}
+
+	// ======================================================================
 
 	effectMod.PendingEf = append(effectMod.PendingEf, Eff...)
 
 	// add instant mp
 	var addEff []*pb.EffectResult
-	var addVal int32
-	wg.Add(2)
-	go func() {
-		addEff = pb.NodeFilter(effectMod.PendingEf, func(v *pb.EffectResult) bool {
-			return (v.TriggerTime.EventPhase == pb.EventHookPhase_move_card_drop_phase &&
-				v.TriggerTime.HookType == pb.EventHookType_Proxy &&
-				v.EfOption == pb.EffectOption_Status_Addition &&
-				v.TarSide == req.Side &&
-				v.TarCard == currentAtkKey)
-		})
-		for _, v := range addEff {
-			addVal += v.Mp
-		}
-		wg.Done()
-	}()
-	var fixEff []*pb.EffectResult
-	var fixVal int32
-	go func() {
-		fixEff = pb.NodeFilter(effectMod.PendingEf, func(v *pb.EffectResult) bool {
-			return (v.TriggerTime.EventPhase == pb.EventHookPhase_determine_move_phase &&
-				v.TriggerTime.HookType == pb.EventHookType_Proxy &&
-				v.EfOption == pb.EffectOption_Status_FixValue &&
-				v.TarSide == req.Side &&
-				v.TarCard == currentAtkKey)
-		})
-		for _, v := range fixEff {
-			if v.Ap > fixVal {
-				fixVal = v.Mp
-			}
-		}
-		wg.Done()
-	}()
-	wg.Wait()
-	if len(fixEff) > 0 {
-		if req.Side == pb.PlayerSide_HOST {
-			snapMove.HostVal = fixVal
-		} else if req.Side == pb.PlayerSide_DUELER {
-			snapMove.DuelVal = fixVal
-		}
-	} else {
-		if req.Side == pb.PlayerSide_HOST {
-			snapMove.HostVal += addVal
-		} else if req.Side == pb.PlayerSide_DUELER {
-			snapMove.DuelVal += addVal
+
+	addEff = pb.NodeFilter(effectMod.PendingEf, func(v *pb.EffectResult) bool {
+		return (v.TriggerTime.EventPhase == pb.EventHookPhase_move_card_drop_phase &&
+			v.TriggerTime.HookType == pb.EventHookType_Proxy &&
+			v.TarSide == req.Side &&
+			v.TarCard == currentAtkKey)
+	})
+
+	for _, v := range addEff {
+		switch {
+
+		case v.StatusId == 14:
+			*Val += v.Mp
+		case v.StatusId == 15:
+			*Val -= v.Mp
 		}
 	}
+	if req.Side == pb.PlayerSide_HOST {
 
-	// effectMod
+		snapMove.HostVal = *Val
+		// snapPhase
+		snapPhase.IsHostReady = true
 
-	// do snap-mod update
-	// wg.Add(1)
+	} else if req.Side == pb.PlayerSide_DUELER {
 
+		// snapPhase
+		snapMove.DuelVal = *Val
+		snapPhase.IsDuelReady = true
+	}
 	// ======================================================================
 	wg.Add(3)
 	go func() {
@@ -233,7 +213,7 @@ func (this *ULZGameDuelServiceBackend) MovePhaseConfirm(ctx context.Context, req
 	// side := req.Side.String()
 	go this.BroadCast(&pb.GDBroadcastResp{
 		RoomKey:      req.RoomKey,
-		Msg:          fmt.Sprintf("MOV_PHASE:Val_Ready:%v", req.Side.String(), *Val+addVal),
+		Msg:          fmt.Sprintf("MOV_PHASE:%s,Val_Ready:%v", req.Side.String(), *Val),
 		Command:      pb.CastCmd_GET_MOVE_PHASE_RESULT,
 		CurrentPhase: pb.EventHookPhase_move_card_drop_phase,
 		PhaseHook:    pb.EventHookType_Proxy,

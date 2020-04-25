@@ -334,7 +334,7 @@ func (this *ULZGameDuelServiceBackend) executeEffectNode(
 			},
 			gameSet,
 		)
-		cleanEffectResult(stateMod.EventPhase, stateMod.HookType, effectMod)
+		// cleanEffectResult(stateMod.EventPhase, stateMod.HookType, effectMod)
 	}
 	fmt.Printf("updated gameSet %#v \n err?: %v\n", gameSet1, err)
 	return gameSet1, err

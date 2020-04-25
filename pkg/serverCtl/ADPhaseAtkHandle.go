@@ -93,12 +93,6 @@ func (this *ULZGameDuelServiceBackend) attackPhaseHandle(
 		snapMod.AttackVal += tmpAtk
 	}
 
-	cleanEffectResult(
-		pb.EventHookPhase_attack_card_drop_phase,
-		pb.EventHookType_Proxy,
-		effectMod,
-	)
-
 	// ======================================================================
 
 	errch = make(chan error)

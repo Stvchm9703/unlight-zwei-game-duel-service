@@ -2,8 +2,10 @@ package serverCtl
 
 import (
 	pb "ULZGameDuelService/proto"
+	"encoding/json"
 	"fmt"
 	"log"
+	"strings"
 	"sync"
 	// cm "ULZGameDuelService/pkg/common"
 	// "context"
@@ -26,6 +28,108 @@ func (this *ULZGameDuelServiceBackend) determineMovePhaseHandle(
 ) {
 	// go to request the move result
 	// SECTION: skill-calculation
+	twg := sync.WaitGroup{}
+	twg.Add(2)
+	var hostCurrentEF, duelCurrentEF pb.EffectResult
+	var hostEF, duelEF []*pb.EffectResult
+	var hostNoHeal, hostFocHeal, hostPois1, hostPosi2 bool
+	var duelNoHeal, duelFocHeal, duelPois1, duelPosi2 bool
+	var hostEfFlag, duelEfFlag []string
+	go func() {
+		hostEF = pb.NodeFilter(effectMod.PendingEf, func(v *pb.EffectResult) bool {
+			return v.TriggerTime.EventPhase == pb.EventHookPhase_determine_move_phase &&
+				v.TriggerTime.HookType == pb.EventHookType_Proxy &&
+				v.TarSide == pb.PlayerSide_HOST &&
+				v.TarCard == gameSet.HostCurrCardKey
+		})
+		tmpFuncMap := make(map[string]string)
+		for _, v := range hostEF {
+			switch {
+			case v.DisableChange:
+				hostCurrentEF.DisableChange = v.DisableChange
+				fallthrough
+			case v.DisableMove:
+				hostCurrentEF.DisableMove = v.DisableMove
+				fallthrough
+			case v.BindingFunc != "":
+				tmpFuncMap[fmt.Sprint(v.SkillId)] = v.BindingFunc
+				fallthrough
+
+			case v.StatusId == 1:
+				hostPois1 = true
+				hostEfFlag = append(hostEfFlag, "poison")
+			case v.StatusId == 2:
+				hostPosi2 = true
+				hostEfFlag = append(hostEfFlag, "poison2")
+			case v.StatusId == 16:
+				hostFocHeal = true
+				hostEfFlag = append(hostEfFlag, "regene")
+			case v.StatusId == 27:
+				hostNoHeal = true
+				hostEfFlag = append(hostEfFlag, "dark")
+			}
+			rs, _ := json.Marshal(tmpFuncMap)
+			v.BindingFunc = string(rs)
+		}
+		twg.Done()
+	}()
+
+	go func() {
+		duelEF = pb.NodeFilter(effectMod.PendingEf, func(v *pb.EffectResult) bool {
+			return v.TriggerTime.EventPhase == pb.EventHookPhase_determine_move_phase &&
+				v.TriggerTime.HookType == pb.EventHookType_Proxy &&
+				v.TarSide == pb.PlayerSide_DUELER &&
+				v.TarCard == gameSet.DuelCurrCardKey
+		})
+		tmpFuncMap := make(map[string]string)
+		for _, v := range duelEF {
+			switch {
+			case v.DisableChange:
+				hostCurrentEF.DisableChange = v.DisableChange
+				fallthrough
+			case v.DisableMove:
+				hostCurrentEF.DisableMove = v.DisableMove
+				fallthrough
+			case v.BindingFunc != "":
+				tmpFuncMap[fmt.Sprint(v.SkillId)] = v.BindingFunc
+				fallthrough
+			case v.StatusId == 1:
+				duelPois1 = true
+				duelEfFlag = append(duelEfFlag, "poison")
+
+			case v.StatusId == 2:
+				duelPosi2 = true
+				duelEfFlag = append(duelEfFlag, "poison2")
+
+			case v.StatusId == 16:
+				duelFocHeal = true
+				duelEfFlag = append(duelEfFlag, "regene")
+
+			case v.StatusId == 27:
+				duelNoHeal = true
+				duelEfFlag = append(duelEfFlag, "dark")
+
+			}
+			rs, _ := json.Marshal(tmpFuncMap)
+			v.BindingFunc = string(rs)
+		}
+		twg.Done()
+	}()
+	twg.Wait()
+	// =======================================================================
+	if hostCurrentEF.DisableMove {
+		moveMod.HostVal = 0
+	} else if hostCurrentEF.EfOption == pb.EffectOption_Hard_Instance_Change {
+		moveMod.HostVal = hostCurrentEF.Mp
+	}
+
+	if duelCurrentEF.DisableMove {
+		moveMod.DuelVal = 0
+	} else if duelCurrentEF.EfOption == pb.EffectOption_Hard_Instance_Change {
+		moveMod.DuelVal = duelCurrentEF.Mp
+	}
+
+	// =======================================================================
 
 	domain := pb.PlayerSide_HOST
 	var tmpval int32
@@ -38,7 +142,6 @@ func (this *ULZGameDuelServiceBackend) determineMovePhaseHandle(
 	case !isMoveFowBack(moveMod.HostOpt) && isMoveFowBack(moveMod.DuelOpt):
 		domain = pb.PlayerSide_DUELER
 	case isMoveFowBack(moveMod.HostOpt) && isMoveFowBack(moveMod.DuelOpt):
-		_effectCheckForMovePhase(gameSet, effectMod, moveMod)
 		fmt.Printf("movMod:%#v", moveMod)
 		if moveMod.HostVal > moveMod.DuelVal {
 			domain = pb.PlayerSide_HOST
@@ -81,22 +184,54 @@ func (this *ULZGameDuelServiceBackend) determineMovePhaseHandle(
 	gameSet.FirstAttack = domain
 	gameSet.CurrPhase = domain
 
-	if moveMod.HostOpt == pb.MovePhaseOpt_STAY {
+	/**
+	 * proxy-recover => status-posion => status-regene
+	 */
+
+	//  proxy-recover
+	if moveMod.HostOpt == pb.MovePhaseOpt_STAY && !hostNoHeal {
 		gameSet.HostCardDeck[gameSet.HostCurrCardKey].HpInst++
 	}
-	if moveMod.DuelOpt == pb.MovePhaseOpt_STAY {
+
+	if moveMod.DuelOpt == pb.MovePhaseOpt_STAY && !duelNoHeal {
 		gameSet.DuelCardDeck[gameSet.DuelCurrCardKey].HpInst++
 	}
 
-	fmt.Printf("Range:%s, FirstAttack: %s", distance.String(), domain.String())
+	// status-posion
+	if hostPois1 {
+		gameSet.HostCardDeck[gameSet.HostCurrCardKey].HpInst--
+	}
+	if duelPois1 {
+		gameSet.DuelCardDeck[gameSet.DuelCurrCardKey].HpInst--
+	}
 
+	// status-posion2
+	if hostPosi2 {
+		gameSet.HostCardDeck[gameSet.HostCurrCardKey].HpInst -= 2
+	}
+	if duelPosi2 {
+		gameSet.DuelCardDeck[gameSet.DuelCurrCardKey].HpInst -= 2
+	}
+
+	// status-regene
+	if hostFocHeal {
+		gameSet.HostCardDeck[gameSet.HostCurrCardKey].HpInst++
+	}
+	if duelFocHeal {
+		gameSet.DuelCardDeck[gameSet.DuelCurrCardKey].HpInst++
+	}
+
+	fmt.Printf("Range:%s;FirstAttack:%s\n", distance.String(), domain.String())
+	fmt.Printf("host:%s", strings.Join(hostEfFlag, ","))
+	fmt.Printf("duel:%s", strings.Join(duelEfFlag, ","))
 	//
 	// this.executeEffectNode(gameSet, stateMod, effectMod)
-	cleanEffectResult(
-		pb.EventHookPhase_determine_move_phase,
-		pb.EventHookType_Proxy,
-		effectMod,
-	)
+
+	// cleanEffectResult(
+	// 	pb.EventHookPhase_determine_move_phase,
+	// 	pb.EventHookType_Proxy,
+	// 	effectMod,
+	// )
 
 	// this.proxyHandle(gameSet *pb.GameDataSet, phaseMod *pb.PhaseSnapMod, effectMod *pb.EffectNodeSnapMod, snapMod ...interface{})
 
@@ -125,84 +260,18 @@ func (this *ULZGameDuelServiceBackend) determineMovePhaseHandle(
 	}()
 	// send ok message
 
-}
-func _effectCheckForMovePhase(
-	gmSet *pb.GameDataSet,
-	eflist *pb.EffectNodeSnapMod,
-	snapMove *pb.MovePhaseSnapMod,
-) {
-	fmt.Println("Start Filter effect")
-	/** TODO : concat the Effect node that for move-phase calculating
-	 */
-	// =======================================================================
-	twg := sync.WaitGroup{}
-	twg.Add(2)
-	var hostCurrentEF, duelCurrentEF pb.EffectResult
-	var hostEF, duelEF []*pb.EffectResult
-	go func() {
-		hostEF = pb.NodeFilter(eflist.PendingEf, func(v *pb.EffectResult) bool {
-			return v.TriggerTime.EventPhase == pb.EventHookPhase_determine_move_phase &&
-				v.TriggerTime.HookType == pb.EventHookType_Proxy &&
-				v.TarSide == pb.PlayerSide_HOST &&
-				v.TarCard == gmSet.HostCurrCardKey
-		})
-		for _, v := range hostEF {
-			if v.EfOption == pb.EffectOption_Hard_Instance_Change {
-				hostCurrentEF.EfOption = pb.EffectOption_Hard_Instance_Change
-			}
-			if v.DisableMove {
-				hostCurrentEF.DisableMove = v.DisableMove
-			}
-			if v.DisableChange {
-				hostCurrentEF.DisableChange = v.DisableChange
-			}
-			if v.BindingFunc != "" {
-				hostCurrentEF.BindingFunc += ";" + v.BindingFunc
-			}
-		}
-		twg.Done()
-	}()
+	this.BroadCast(&pb.GDBroadcastResp{
+		RoomKey: gameSet.RoomKey,
+		Msg: fmt.Sprintf(
+			"Range:%s;FA:%s;MovEf:Self:%s;Duel:%s;",
+			distance.String(), domain.String(),
+			strings.Join(hostEfFlag, ","),
+			strings.Join(duelEfFlag, ",")),
+		Command:      pb.CastCmd_INSTANCE_STATUS_CHANGE,
+		CurrentPhase: pb.EventHookPhase_determine_move_phase,
+		PhaseHook:    pb.EventHookType_Proxy,
+	})
 
-	go func() {
-		duelEF = pb.NodeFilter(eflist.PendingEf, func(v *pb.EffectResult) bool {
-			return v.TriggerTime.EventPhase == pb.EventHookPhase_determine_move_phase &&
-				v.TriggerTime.HookType == pb.EventHookType_Proxy &&
-				v.TarSide == pb.PlayerSide_DUELER &&
-				v.TarCard == gmSet.HostCurrCardKey
-		})
-		for _, v := range duelEF {
-			if v.EfOption == pb.EffectOption_Hard_Instance_Change {
-				duelCurrentEF.EfOption = pb.EffectOption_Hard_Instance_Change
-				duelCurrentEF.Mp = v.Mp
-			}
-			if v.DisableMove {
-				duelCurrentEF.DisableMove = v.DisableMove
-			}
-			if v.DisableChange {
-				duelCurrentEF.DisableChange = v.DisableChange
-			}
-			if v.BindingFunc != "" {
-				duelCurrentEF.BindingFunc += ";" + v.BindingFunc
-			}
-		}
-
-		twg.Done()
-	}()
-	twg.Wait()
-	// =======================================================================
-	if hostCurrentEF.DisableMove {
-		snapMove.HostVal = 0
-	} else if hostCurrentEF.EfOption == pb.EffectOption_Hard_Instance_Change {
-		snapMove.HostVal = hostCurrentEF.Mp
-	}
-
-	if duelCurrentEF.DisableMove {
-		snapMove.DuelVal = 0
-	} else if duelCurrentEF.EfOption == pb.EffectOption_Hard_Instance_Change {
-		snapMove.DuelVal = duelCurrentEF.Mp
-	}
-
-	// =======================================================================
 }
 
 func isMoveFowBack(opt pb.MovePhaseOpt) bool {
