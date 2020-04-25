@@ -20,82 +20,84 @@ func (this *ULZGameDuelServiceBackend) defencePhaseHandle(
 	// SECTION: skill-calculation
 	wg := sync.WaitGroup{}
 	errch := make(chan error)
+
+	tmpDef := int32(0)
+	isDisable := false
+
+	var currentDefKey int32
+	var side pb.PlayerSide
+	if snapMod.CurrAttacker == pb.PlayerSide_HOST {
+		currentDefKey = gameSet.DuelCurrCardKey
+		side = pb.PlayerSide_DUELER
+	} else if snapMod.CurrAttacker == pb.PlayerSide_DUELER {
+		currentDefKey = gameSet.HostCurrCardKey
+		side = pb.PlayerSide_HOST
+	}
 	// ======================================================================
 	wg.Add(1)
 	var val *int32
 	var eff []*pb.EffectResult
-	go func() {
-		var err error
+	var err error
+
+	disableSkill := pb.NodeFilter(effectMod.PendingEf, func(v *pb.EffectResult) bool {
+		return (v.TriggerTime.EventPhase == pb.EventHookPhase_attack_card_drop_phase &&
+			v.TriggerTime.HookType == pb.EventHookType_Proxy &&
+			v.TarSide == stateMod.CurrAttack &&
+			v.TarCard == currentDefKey &&
+			v.StatusId == 10)
+	})
+
+	if len(disableSkill) == 0 {
 		val, eff, err = this.skillClient.SkillCalculateWrap(
 			snapMod.DefenceCard,
 			snapMod.DefenceTrigSkl,
 			pb.EventCardType_DEFENCE,
 		)
 		if err != nil {
-			errch <- err
-			return
+			fmt.Printf("defence-phase-handle::%v", err)
+			return false, err
 		}
-		wg.Done()
-	}()
-	wg.Wait()
-	if errt := <-errch; errt != nil {
-		fmt.Printf("defence-phase-handle::%v", errt)
-		return false, errt
+	} else {
+		val = &snapMod.DefenceVal
 	}
+
 	// ======================================================================
 	// do update
 	snapMod.DefenceVal = *val
 	snapMod.IsProcessed = true
 	effectMod.PendingEf = append(effectMod.PendingEf, eff...)
-	side := snapMod.CurrAttacker
-	var currentDefKey int32
-	if side == pb.PlayerSide_HOST {
-		side = pb.PlayerSide_DUELER
-		currentDefKey = gameSet.DuelCurrCardKey
-	} else {
-		side = pb.PlayerSide_HOST
-		currentDefKey = gameSet.HostCurrCardKey
-	}
-	var addEff []*pb.EffectResult
-	var FixEff []*pb.EffectResult
-	wg.Add(2)
-	go func() {
-		addEff = pb.NodeFilter(effectMod.PendingEf, func(v *pb.EffectResult) bool {
-			return (v.TriggerTime.EventPhase == pb.EventHookPhase_attack_card_drop_phase &&
-				v.TriggerTime.HookType == pb.EventHookType_Proxy &&
-				v.EfOption == pb.EffectOption_Status_Addition &&
-				v.TarSide == side &&
-				v.TarCard == currentDefKey)
-		})
-		wg.Done()
-	}()
 
-	// Hard Set Value
-	go func() {
-		FixEff = pb.NodeFilter(effectMod.PendingEf, func(v *pb.EffectResult) bool {
-			return (v.TriggerTime.EventPhase == pb.EventHookPhase_attack_card_drop_phase &&
-				v.TriggerTime.HookType == pb.EventHookType_Proxy &&
-				v.EfOption == pb.EffectOption_Status_FixValue &&
-				v.TarSide == side &&
-				v.TarCard == currentDefKey)
-		})
-		wg.Done()
-	}()
-	wg.Wait()
-	if len(FixEff) > 0 {
-		tmpAtk := int32(0)
-		for _, v := range FixEff {
-			if v.Dp > tmpAtk {
-				tmpAtk = v.Dp
+	addEff := pb.NodeFilter(effectMod.PendingEf, func(v *pb.EffectResult) bool {
+		return (v.TriggerTime.EventPhase == pb.EventHookPhase_attack_card_drop_phase &&
+			v.TriggerTime.HookType == pb.EventHookType_Proxy &&
+			v.EfOption == pb.EffectOption_Status_Addition &&
+			v.TarSide != stateMod.CurrAttack &&
+			v.TarCard == currentDefKey)
+	})
+
+	for _, v := range addEff {
+		switch {
+		case v.StatusId == 6, v.StatusId == 19, v.StatusId == 21:
+			tmpDef += v.Dp
+		case v.StatusId == 7:
+			tmpDef -= v.Dp
+		case v.StatusId == 9:
+			isDisable = true
+		case v.StatusId == 23:
+			if v.Dp == 1 {
+				tmpDef++
+			} else if v.Dp == 2 {
+				tmpDef += 2
+			} else if v.Dp > 2 {
+				tmpDef += 5
 			}
 		}
-		snapMod.DefenceVal = tmpAtk
-	} else {
-		for _, v := range addEff {
-			snapMod.DefenceVal += v.Dp
-		}
 	}
-
+	if isDisable {
+		snapMod.DefenceVal = 0
+	} else {
+		snapMod.DefenceVal += tmpDef
+	}
 	// ======================================================================
 	errch = make(chan error)
 	wg.Add(2)

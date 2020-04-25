@@ -207,6 +207,10 @@ func (this *ULZGameDuelServiceBackend) ADPhaseConfirm(
 	return nil, status.Error(codes.Unimplemented, "AD_PHASE_CONFIRM")
 }
 
+/**
+ * ADPhaseResult : event-handle@
+ * 	for atk-phase & def-phase
+ */
 func (this *ULZGameDuelServiceBackend) ADPhaseResult(ctx context.Context, req *pb.GDGetInfoReq) (*pb.GDADResultResp, error) {
 	cm.PrintReqLog(ctx, "AtkDef-Phase-Result", req)
 	start := time.Now()

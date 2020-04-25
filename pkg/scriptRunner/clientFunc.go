@@ -2,6 +2,7 @@ package scriptRunner
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	cm "ULZGameDuelService/pkg/common"
@@ -12,6 +13,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"sort"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/peer"
@@ -220,10 +222,15 @@ func (cli *SkillEffectSvcClient) DiceCalculate(req *pb.SEDiceCalReq) (*pb.SEDice
 
 type DiceResult [][]int
 
-func (cli *SkillEffectSvcClient) DiceCalculateWrap(incomeDice int, act int) (DiceResult, error) {
+func (cli *SkillEffectSvcClient) DiceCalculateWrap(
+	incomeDice int32,
+	act int,
+	InvolveEff []*dataPb.EffectResult,
+) (DiceResult, error) {
 	res, err := cli.DiceCalculate(&pb.SEDiceCalReq{
-		IncomeDice: int32(incomeDice),
-		Act:        int32(act),
+		IncomeDice:   incomeDice,
+		Act:          int32(act),
+		EffectResult: InvolveEff,
 	})
 	if err != nil {
 		return nil, err
@@ -237,4 +244,27 @@ func (cli *SkillEffectSvcClient) DiceCalculateWrap(incomeDice int, act int) (Dic
 		resd = append(resd, asd)
 	}
 	return resd, nil
+}
+
+func (dr *DiceResult) ToString() string {
+	tmpStr := ""
+	for _, v := range *dr {
+		tmpStr += strings.Replace(fmt.Sprint(v), " ", ",", -1) + ";"
+	}
+	return tmpStr
+}
+
+func (dr *DiceResult) ToTotal() int32 {
+	var tmpInt []int32
+	for _, v := range *dr {
+		vv := int32(0)
+		for _, vk := range v {
+			vv += int32(vk)
+		}
+		tmpInt = append(tmpInt, vv)
+	}
+	sort.Slice(tmpInt, func(i, j int) bool {
+		return tmpInt[i] > tmpInt[j]
+	})
+	return tmpInt[0]
 }

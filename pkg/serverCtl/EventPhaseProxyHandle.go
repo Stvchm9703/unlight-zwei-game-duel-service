@@ -70,8 +70,10 @@ func (this *ULZGameDuelServiceBackend) proxyHandle(
 	case pb.EventHookPhase_battle_result_phase:
 		// see also : battlePhase.go
 		snapADMod, _ := snapMod[0].(*pb.ADPhaseSnapMod)
-		this.battlePhaseHandle(gameSet, phaseMod, effectMod, snapADMod)
+		snapMod[0] = this.battlePhaseHandle(gameSet, phaseMod, effectMod, snapADMod)
 	case pb.EventHookPhase_damage_phase:
+		snapResultMod, _ := snapMod[0].(*pb.GDADDiceResult)
+		this.damagePhaseHandle(gameSet, phaseMod, effectMod, snapResultMod)
 		// see also : battlePhase.go
 
 	case pb.EventHookPhase_dead_chara_change_phase:

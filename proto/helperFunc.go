@@ -22,6 +22,11 @@ func (*ADPhaseSnapMod) RdsKeyName() string {
 	return ":ADPhMod"
 }
 
+// RdsKeyName : the common model naming for GDADDiceResult
+func (*GDADDiceResult) RdsKeyName() string {
+	return ":ADPhDiceResult"
+}
+
 // RdsKeyName : the common model naming for EffectNodeSnapMod
 func (*EffectNodeSnapMod) RdsKeyName() string {
 	return ":EfMod"
@@ -104,6 +109,13 @@ func (set *EventCardListSet) ECListMoveTo(fromPos EventCardPos, toPos EventCardP
 			v.Position = toPos
 		}
 	}
+}
+
+func GetSkillId(skLst []*SkillSet) (idList []int32) {
+	for _, v := range skLst {
+		idList = append(idList, v.Id)
+	}
+	return
 }
 
 func File_Data_proto_init() {
