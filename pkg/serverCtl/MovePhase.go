@@ -33,7 +33,7 @@ func (this *ULZGameDuelServiceBackend) MovePhaseConfirm(ctx context.Context, req
 	// get data -----
 	wg := sync.WaitGroup{}
 	// ======================================================================
-	wg.Add(3)
+	wg.Add(4)
 	errch := make(chan error)
 
 	var gameSet pb.GameDataSet
@@ -71,6 +71,18 @@ func (this *ULZGameDuelServiceBackend) MovePhaseConfirm(ctx context.Context, req
 		wkbox.Preserve(false)
 		wg.Done()
 	}()
+	// effect-result
+	var effectMod pb.EffectNodeSnapMod
+	snapEfKey := req.RoomKey + effectMod.RdsKeyName()
+	go func() {
+		wkbox := this.searchAliveClient()
+		if _, err := (wkbox).GetPara(snapEfKey, &effectMod); err != nil {
+			log.Println(err)
+			errch <- err
+		}
+		wkbox.Preserve(false)
+		wg.Done()
+	}()
 	wg.Wait()
 	if err := <-errch; err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -89,37 +101,20 @@ func (this *ULZGameDuelServiceBackend) MovePhaseConfirm(ctx context.Context, req
 	}
 
 	// ======================================================================
-	wg.Add(2)
+	// @Skill-Calculate
 	var Eff []*pb.EffectResult
 	var Val *int32
-	// @Skill-Calculate
-	go func() {
-		var err error
-		Val, Eff, err = this.skillClient.SkillCalculateWrap(
-			req.UpdateCard,
-			req.TriggerSkl,
-			pb.EventCardType_MOVE,
-		)
-		if err != nil {
-			errch <- err
-		}
-		wg.Done()
-	}()
+	var err error
 
-	// effect-result
-	var effectMod pb.EffectNodeSnapMod
-	snapEfKey := req.RoomKey + effectMod.RdsKeyName()
-	go func() {
-		wkbox := this.searchAliveClient()
-		if _, err := (wkbox).GetPara(snapEfKey, &effectMod); err != nil {
-			log.Println(err)
-			errch <- err
-		}
-		wkbox.Preserve(false)
-		wg.Done()
-	}()
-	wg.Wait()
-	if err := <-errch; err != nil {
+	DisableSkill := pb.NodeFilter(effectMod.PendingEf, func(v *pb.EffectResult) bool {
+	})
+
+	Val, Eff, err = this.skillClient.SkillCalculateWrap(
+		req.UpdateCard,
+		req.TriggerSkl,
+		pb.EventCardType_MOVE,
+	)
+	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 	// ======================================================================

@@ -98,6 +98,11 @@ func (this *ULZGameDuelServiceBackend) defencePhaseHandle(
 	} else {
 		snapMod.DefenceVal += tmpDef
 	}
+	cleanEffectResult(
+		pb.EventHookPhase_attack_card_drop_phase,
+		pb.EventHookType_Proxy,
+		effectMod,
+	)
 	// ======================================================================
 	errch = make(chan error)
 	wg.Add(2)
@@ -113,6 +118,14 @@ func (this *ULZGameDuelServiceBackend) defencePhaseHandle(
 	go func() {
 		wkbox := this.searchAliveClient()
 		if _, err := (wkbox).SetPara(gameSet.RoomKey+effectMod.RdsKeyName(), *effectMod); err != nil {
+			log.Println(err)
+			errch <- err
+		}
+		wg.Done()
+	}()
+	go func() {
+		wkbox := this.searchAliveClient()
+		if _, err := (wkbox).SetPara(gameSet.RoomKey+effectMod.RdsKeyName(), effectMod); err != nil {
 			log.Println(err)
 			errch <- err
 		}
