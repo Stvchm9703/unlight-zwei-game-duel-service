@@ -11,7 +11,7 @@ tmpl_server:
 api_server:
   conn_type: grpc
   ip: 192.168.0.102
-  port: 13000
+  port: 12000
   max_pool_size: 20
   api_refer_type: proto
   api_table_filepath: "'./proto/','./'"
@@ -53,3 +53,9 @@ nats_conn:
   api_refer_type: proto
   api_table_filepath: "'./proto/','./'"
   api_outpath: "api/"
+
+effect_calc_service:
+  - conn_type: grpc
+    ip : 192.168.0.110
+    port: 13000
+    service_name : ScriptRunner

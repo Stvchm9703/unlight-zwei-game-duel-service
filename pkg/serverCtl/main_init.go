@@ -48,8 +48,19 @@ func New(conf *cf.ConfTmp) *ULZGameDuelServiceBackend {
 			rdfl = append(rdfl, rdf)
 		}
 	}
-	// skc := sr.ClientListInit("ScriptRunner", conf.EffectCalcService)
-	// nc, _ := nats.Connect(fmt.Sprintf("%s:%v", conf.NatsConn.ConnType))
+	skc := sr.ClientListInit("ScriptRunner", conf.EffectCalcService)
+
+	sd := nats.Options{
+		Url:            fmt.Sprintf("%s://%s:%v", conf.NatsConn.ConnType, conf.NatsConn.IP, conf.NatsConn.Port),
+		AllowReconnect: true,
+		MaxReconnect:   10,
+		ReconnectWait:  5 * time.Second,
+		Timeout:        1 * time.Second,
+	}
+	nc, err := sd.Connect()
+	if err != nil {
+		log.Fatalln(err)
+	}
 	g := ULZGameDuelServiceBackend{
 		CoreKey:     ck,
 		mu:          &sync.Mutex{},
@@ -81,7 +92,7 @@ func (this *ULZGameDuelServiceBackend) Shutdown() {
 	}
 	this.skillClient.ClientClose()
 	this.natscli.Close()
-	// this.CloseDB()
+
 	log.Println("endof shutdown proc:", this.CoreKey)
 }
 
