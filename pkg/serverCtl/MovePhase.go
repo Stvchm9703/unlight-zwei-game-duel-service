@@ -64,7 +64,7 @@ func (this *ULZGameDuelServiceBackend) MovePhaseConfirm(ctx context.Context, req
 	snapPhasekey := req.RoomKey + snapPhase.RdsKeyName()
 	go func() {
 		wkbox := this.searchAliveClient()
-		if _, err := (wkbox).GetPara(snapPhasekey, &snapMove); err != nil {
+		if _, err := (wkbox).GetPara(snapPhasekey, &snapPhase); err != nil {
 			log.Println(err)
 			errch <- err
 		}
@@ -235,8 +235,10 @@ func (this *ULZGameDuelServiceBackend) MovePhaseConfirm(ctx context.Context, req
 			mbox := this.searchAliveClient()
 			var gameDt pb.GameDataSet
 			mbox.GetPara(req.RoomKey, &gameDt)
-			// gameDt.HookType = pb.EventHookType_Proxy
+
 			mbox.Preserve(false)
+			gameDt.HookType = pb.EventHookType_After
+			snapPhase.HookType = pb.EventHookType_After
 			this.moveNextPhase(
 				&gameDt,
 				&snapPhase,
@@ -352,7 +354,8 @@ func (this *ULZGameDuelServiceBackend) MovePhaseResult(ctx context.Context, req 
 				wkbox1.Preserve(false)
 
 				// suppose (gamDT.EventPhase == PhaseMod.EventPhase) === pb.determine
-				// gamDT.EventPhase = PhaseMod.EventPhase
+				gamDT.HookType = pb.EventHookType_After
+				PhaseMod.HookType = pb.EventHookType_After
 				this.moveNextPhase(
 					&gamDT,
 					&PhaseMod,

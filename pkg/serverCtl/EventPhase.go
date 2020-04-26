@@ -1,10 +1,13 @@
 package serverCtl
 
 import (
+	cm "ULZGameDuelService/pkg/common"
 	pb "ULZGameDuelService/proto"
 	"context"
 	"fmt"
+	"log"
 	"sync"
+	"time"
 
 	"github.com/gogo/status"
 	"google.golang.org/grpc/codes"
@@ -128,11 +131,94 @@ import (
  * 		}
  *
  */
-func (this *ULZGameDuelServiceBackend) EventPhaseConfirm(context.Context, *pb.GDPhaseConfirmReq) (*pb.Empty, error) {
+func (this *ULZGameDuelServiceBackend) EventPhaseConfirm(ctx context.Context, req *pb.GDPhaseConfirmReq) (*pb.Empty, error) {
+
 	return nil, status.Error(codes.Unimplemented, "EVENT_PHASE_CONFIRM")
 }
-func (this *ULZGameDuelServiceBackend) EventPhaseResult(context.Context, *pb.GDGetInfoReq) (*pb.GDPhaseConfirmResp, error) {
-	return nil, status.Error(codes.Unimplemented, "EVENT_PHASE_RESULT")
+func (this *ULZGameDuelServiceBackend) EventPhaseResult(ctx context.Context, req *pb.GDGetInfoReq) (*pb.GDPhaseConfirmResp, error) {
+	// get phase-mod
+	cm.PrintReqLog(ctx, "Event-Phase-Result", req)
+	start := time.Now()
+	this.mu.Lock()
+	defer func() {
+		// wkbox.Preserve(false)
+		this.mu.Unlock()
+		elapsed := time.Since(start)
+		log.Printf("Event-Phase-Result took %s", elapsed)
+	}()
+
+	if req.IsWatcher {
+		return nil, status.Error(codes.InvalidArgument, "ERR_PLAYER")
+	}
+
+	var snapPhase pb.PhaseSnapMod
+	snapPhasekey := req.RoomKey + snapPhase.RdsKeyName()
+	wkbox := this.searchAliveClient()
+	if _, err := (wkbox).GetPara(snapPhasekey, &snapPhase); err != nil {
+		log.Println(err)
+		return nil, status.Error(codes.NotFound, err.Error())
+	}
+
+	if req.CurrentPhase != snapPhase.EventPhase {
+		wkbox.Preserve(false)
+		return nil, status.Error(codes.InvalidArgument, "ERR_PHASE")
+	}
+
+	if snapPhase.HookType != pb.EventHookType_Proxy {
+		wkbox.Preserve(false)
+		return nil, status.Error(codes.InvalidArgument, "ERR_PHASE")
+	}
+
+	if (req.Side == pb.PlayerSide_HOST && snapPhase.IsHostReady) ||
+		(req.Side == pb.PlayerSide_DUELER && snapPhase.IsDuelReady) {
+		wkbox.Preserve(false)
+		return nil, status.Error(codes.AlreadyExists, "ALREADY_READY")
+	}
+
+	if req.Side == pb.PlayerSide_HOST {
+		snapPhase.IsHostReady = true
+	} else if req.Side == pb.PlayerSide_DUELER {
+		snapPhase.IsDuelReady = true
+	}
+
+	if _, err := wkbox.SetPara(snapPhasekey, snapPhase); err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	if snapPhase.IsDuelReady && snapPhase.IsHostReady {
+		go func() {
+			wg := sync.WaitGroup{}
+			wg.Add(2)
+			var gameSet pb.GameDataSet
+			var gameSetKey = req.RoomKey
+			go func() {
+				wkbox := this.searchAliveClient()
+				if _, err := (wkbox).GetPara(gameSetKey, &gameSet); err != nil {
+					log.Println(err)
+				}
+				wkbox.Preserve(false)
+				wg.Done()
+			}()
+			// effect-result
+			var effectMod pb.EffectNodeSnapMod
+			snapEfKey := req.RoomKey + effectMod.RdsKeyName()
+			go func() {
+				wkbox := this.searchAliveClient()
+				if _, err := (wkbox).GetPara(snapEfKey, &effectMod); err != nil {
+					log.Println(err)
+				}
+				wkbox.Preserve(false)
+				wg.Done()
+			}()
+			wg.Wait()
+			log.Printf("Rm:%s, EvtPh:%s, Ready", req.RoomKey, req.CurrentPhase.String())
+			this.moveNextPhase(&gameSet, &snapPhase, &effectMod)
+		}()
+	}
+	return &pb.GDPhaseConfirmResp{
+		RoomKey: req.RoomKey,
+	}, nil
+	// wkbox.Preserve(false)
 }
 
 func (this *ULZGameDuelServiceBackend) moveNextPhase(
@@ -151,6 +237,7 @@ func (this *ULZGameDuelServiceBackend) moveNextPhase(
 	this.executeEffectNode(gameDS, phaseMod, effectMod)
 	wg := sync.WaitGroup{}
 	wg.Add(3)
+
 	go func() {
 		wkbox := this.searchAliveClient()
 		wkbox.SetPara(gameDS.RoomKey, gameDS)
@@ -171,20 +258,35 @@ func (this *ULZGameDuelServiceBackend) moveNextPhase(
 	}()
 	wg.Wait()
 
+	if b, _ := this.checkDeadFlaging(gameDS, phaseMod, effectMod); b {
+		this.proxyHandle(gameDS, phaseMod, effectMod, snapMod)
+		return
+	}
+
 	nextPhase, nextType := upnextEventPhase(phaseMod.EventPhase, phaseMod.HookType)
-	gameDS.EventPhase = nextPhase
-	gameDS.HookType = nextType
-	phaseMod.EventPhase = nextPhase
-	phaseMod.HookType = nextType
+
+	if phaseMod.FirstAttack == phaseMod.CurrAttack &&
+		phaseMod.EventPhase == pb.EventHookPhase_damage_phase &&
+		phaseMod.HookType == pb.EventHookType_After {
+		gameDS.EventPhase = pb.EventHookPhase_change_initiative_phase
+		phaseMod.EventPhase = pb.EventHookPhase_change_initiative_phase
+		gameDS.HookType = pb.EventHookType_Before
+		phaseMod.HookType = pb.EventHookType_Before
+	} else {
+		gameDS.EventPhase = nextPhase
+		gameDS.HookType = nextType
+		phaseMod.EventPhase = nextPhase
+		phaseMod.HookType = nextType
+	}
+
+	// after shift
 	if phaseMod.HookType == pb.EventHookType_Proxy {
 		this.proxyHandle(gameDS, phaseMod, effectMod, snapMod)
 		return
 	}
 
 	// upshift the phase
-	if b, _ := this.checkDeadFlaging(gameDS, phaseMod, effectMod); b {
-		this.proxyHandle(gameDS, phaseMod, effectMod, snapMod)
-	}
+
 	// non-proxy: move next again
 	this.moveNextPhase(gameDS, phaseMod, effectMod, snapMod)
 
@@ -334,7 +436,7 @@ func (this *ULZGameDuelServiceBackend) executeEffectNode(
 			},
 			gameSet,
 		)
-		// cleanEffectResult(stateMod.EventPhase, stateMod.HookType, effectMod)
+		cleanEffectResult(stateMod.EventPhase, stateMod.HookType, effectMod)
 	}
 	fmt.Printf("updated gameSet %#v \n err?: %v\n", gameSet1, err)
 	return gameSet1, err

@@ -277,3 +277,83 @@ func (this *ULZGameDuelServiceBackend) determineMovePhaseHandle(
 func isMoveFowBack(opt pb.MovePhaseOpt) bool {
 	return opt == pb.MovePhaseOpt_BACKWARD || opt == pb.MovePhaseOpt_FORWARD
 }
+
+func (this *ULZGameDuelServiceBackend) finishMovePhase(
+	gameSet *pb.GameDataSet,
+	phaseMod *pb.PhaseSnapMod,
+	effectMod *pb.EffectNodeSnapMod,
+	snapMovMod *pb.MovePhaseSnapMod,
+) {
+	hostHp, duelHp := int32(0), int32(0)
+	if snapMovMod.HostOpt == pb.MovePhaseOpt_STAY {
+		hostHp = 1
+	}
+	if snapMovMod.DuelOpt == pb.MovePhaseOpt_STAY {
+		duelHp = 1
+	}
+	mvResult := pb.GDMoveConfirmResp{
+		RoomKey:      gameSet.RoomKey,
+		ResultRange:  gameSet.Range,
+		HostCurrCard: gameSet.HostCurrCardKey,
+		DuelCurrCard: gameSet.DuelCurrCardKey,
+		HostHp:       hostHp,
+		DuelHp:       duelHp,
+	}
+	var hostECInStore, duelECInStore pb.EventCardListSet
+	wg := sync.WaitGroup{}
+	wg.Add(4)
+	errch := make(chan error)
+	go func() {
+		key := gameSet.RoomKey + mvResult.RdsKeyName()
+		wkbox := this.searchAliveClient()
+		wkbox.SetPara(key, mvResult)
+		wkbox.Preserve(false)
+		wg.Done()
+	}()
+	go func() {
+		wkbox := this.searchAliveClient()
+		key := gameSet.RoomKey + hostECInStore.RdsKeyName(pb.PlayerSide_HOST)
+		if _, err := (wkbox).GetPara(key, &hostECInStore); err != nil {
+			errch <- err
+		}
+		hostECInStore.ECListMoveTo(pb.EventCardPos_OUTSIDE, pb.EventCardPos_DESTROY)
+		if _, err := (wkbox).SetPara(key, hostECInStore); err != nil {
+			errch <- err
+		}
+		wg.Done()
+	}()
+	go func() {
+		wkbox := this.searchAliveClient()
+		key := gameSet.RoomKey + duelECInStore.RdsKeyName(pb.PlayerSide_DUELER)
+		if _, err := (wkbox).GetPara(key, &duelECInStore); err != nil {
+			errch <- err
+		}
+		duelECInStore.ECListMoveTo(pb.EventCardPos_OUTSIDE, pb.EventCardPos_DESTROY)
+		if _, err := (wkbox).SetPara(key, duelECInStore); err != nil {
+			errch <- err
+		}
+		wg.Done()
+	}()
+	go func() {
+		wkbox := this.searchAliveClient()
+		var admod pb.ADPhaseSnapMod
+		if _, err := wkbox.GetPara(gameSet.RoomKey+admod.RdsKeyName(), &admod); err != nil {
+			errch <- err
+		}
+		admod.CurrAttacker = gameSet.FirstAttack
+		admod.FirstAttack = gameSet.FirstAttack
+		if _, err := (wkbox).SetPara(gameSet.RoomKey+admod.RdsKeyName(), admod); err != nil {
+			errch <- err
+		}
+		wg.Done()
+	}()
+	wg.Wait()
+	this.BroadCast(&pb.GDBroadcastResp{
+		RoomKey:      gameSet.RoomKey,
+		Msg:          fmt.Sprintf("MOVE:MOVE_RESULT:"),
+		Command:      pb.CastCmd_GET_MOVE_PHASE_RESULT,
+		CurrentPhase: pb.EventHookPhase_finish_move_phase,
+		PhaseHook:    pb.EventHookType_Proxy,
+	})
+	log.Println("end of finish-move-phase")
+}

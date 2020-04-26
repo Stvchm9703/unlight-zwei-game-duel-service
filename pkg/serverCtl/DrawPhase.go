@@ -17,9 +17,7 @@ func (this *ULZGameDuelServiceBackend) DrawPhaseConfirm(ctx context.Context, req
 	cm.PrintReqLog(ctx, "Draw-Phase-Confirm", req)
 	start := time.Now()
 	this.mu.Lock()
-	wkbox := this.searchAliveClient()
 	defer func() {
-		wkbox.Preserve(false)
 		this.mu.Unlock()
 		elapsed := time.Since(start)
 		log.Printf("Draw-Phase-Confirm took %s", elapsed)
@@ -28,10 +26,11 @@ func (this *ULZGameDuelServiceBackend) DrawPhaseConfirm(ctx context.Context, req
 		return nil, cm.StatusErrorNonPlayer()
 	}
 	// change
+	wkbox := this.searchAliveClient()
 	var returner pb.PhaseSnapMod
-	// go func() {}()
 	if _, err := (wkbox).GetPara(req.RoomKey+returner.RdsKeyName(), &returner); err != nil {
 		log.Println(err)
+		wkbox.Preserve(false)
 		return nil, status.Errorf(codes.NotFound, err.Error())
 	}
 
@@ -65,34 +64,36 @@ func (this *ULZGameDuelServiceBackend) DrawPhaseConfirm(ctx context.Context, req
 	if _, err := wkbox.SetPara(req.RoomKey+returner.RdsKeyName(), returner); err != nil {
 		return nil, err
 	}
+	wkbox.Preserve(false)
 	log.Println("ACK-msg")
 	if returner.IsHostReady && returner.IsDuelReady {
-		// broadcast for ready next phase
-		returner.EventPhase = pb.EventHookPhase_refill_action_card_phase
-		returner.HookType = pb.EventHookType_After
-		// check event hook
-		go this.BroadCast(&pb.GDBroadcastResp{
-			RoomKey:      req.RoomKey,
-			Msg:          "Both_Ready",
-			Command:      pb.CastCmd_GET_DRAW_PHASE_RESULT,
-			CurrentPhase: pb.EventHookPhase_refill_action_card_phase,
-			PhaseHook:    pb.EventHookType_Proxy,
-			Side:         0,
-			InstanceSet:  nil,
-		})
-		// go this.phaseTrigEf()
+		go func() {
+			// broadcast for ready next phase
+			this.BroadCast(&pb.GDBroadcastResp{
+				RoomKey:      req.RoomKey,
+				Msg:          "Both_Ready",
+				Command:      pb.CastCmd_GET_DRAW_PHASE_RESULT,
+				CurrentPhase: pb.EventHookPhase_refill_action_card_phase,
+				PhaseHook:    pb.EventHookType_Proxy,
+				Side:         0,
+				InstanceSet:  nil,
+			})
 
-		// go func() {
-		// 	var gameSet pb.GameDataSet
-		// 	if _, err := wkbox.SetPara(&req.RoomKey, &gameSet); err != nil {
-		// 		errch <- status.Error(codes.Internal, err.Error())
-		// 	} else {
-		// 		// this.phaseTrigEf(&gameSet)
-		// 	}
-		// }()
-		// if err := <-errch; err != nil {
-		// 	return nil, err
-		// }
+			returner.EventPhase = pb.EventHookPhase_refill_action_card_phase
+			returner.HookType = pb.EventHookType_Proxy
+			// check event hook
+			var gmset pb.GameDataSet
+			mbox := this.searchAliveClient()
+			if _, err := mbox.GetPara(req.RoomKey, &gmset); err != nil {
+				log.Println(err)
+			}
+			var efMod pb.EffectNodeSnapMod
+			if _, err := mbox.GetPara(req.RoomKey+efMod.RdsKeyName(), &efMod); err != nil {
+				log.Println(err)
+			}
+			mbox.Preserve(false)
+			this.moveNextPhase(&gmset, &returner, &efMod)
+		}()
 	}
 	return &pb.Empty{}, nil
 	// return nil, status.Error(codes.Unimplemented, "DRAW_PHASE_CONFIRM")
