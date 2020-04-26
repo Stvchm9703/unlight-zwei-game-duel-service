@@ -2,6 +2,7 @@ package redis
 
 import (
 	"ULZGameDuelService/pkg/config"
+	"fmt"
 
 	"encoding/json"
 	"log"
@@ -146,9 +147,9 @@ func (rc *RdsCliBox) register() (bool, error) {
 	str := rc.CoreKey + "/_" + rc.Key
 	ind, err := rc.conn.LRange(redisCliPoolName, 0, -1).Result()
 	if err != nil {
-		log.Println("error search")
-		log.Println("ind:", ind)
-		log.Println(err)
+		fmt.Println("error search")
+		fmt.Println("ind:", ind)
+		fmt.Println(err)
 		keyexist, err := rc.conn.Exists(redisCliPoolName).Result()
 		if err != nil {
 			return false, err
@@ -159,7 +160,7 @@ func (rc *RdsCliBox) register() (bool, error) {
 		// log.Println("ind:", ind)
 		for _, v := range ind {
 			if v == str {
-				log.Println("key exist")
+				fmt.Println("key exist")
 				return false, nil
 			}
 		}
@@ -170,7 +171,7 @@ func (rc *RdsCliBox) register() (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	log.Println("register-proc:", res, ":", str)
+	fmt.Println("register-proc:", res, ":", str)
 
 	_, err = rc.conn.Set(redisCliPoolName+"-marshal-method", rc.MarshalMethods, redisCliSetTime).Result()
 	if err != nil {
@@ -185,8 +186,8 @@ func (rc *RdsCliBox) unregister() (bool, error) {
 	ind, err := rc.conn.LRange(redisCliPoolName, 0, -1).Result()
 	if err != nil {
 		log.Println("error search")
-		log.Println("ind:", ind)
-		log.Println(err)
+		fmt.Println("ind:", ind)
+		fmt.Println(err)
 		keyexist, err := rc.conn.Exists(redisCliPoolName).Result()
 		if err != nil {
 			return false, err
