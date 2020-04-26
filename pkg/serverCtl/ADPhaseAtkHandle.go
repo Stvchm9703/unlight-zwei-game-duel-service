@@ -135,5 +135,6 @@ func (this *ULZGameDuelServiceBackend) attackPhaseHandle(
 		CurrentPhase: pb.EventHookPhase_attack_card_drop_phase,
 		PhaseHook:    pb.EventHookType_Proxy,
 	})
+
 	return true, nil
 }

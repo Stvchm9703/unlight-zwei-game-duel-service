@@ -73,7 +73,7 @@ func (this *ULZGameDuelServiceBackend) CreateGame(ctx context.Context, req *pb.G
 	// event-card-control
 	new_gameset.HostEventCardDeck = genCardSet(150, 0)
 	new_gameset.DuelEventCardDeck = genCardSet(150, 0)
-	wg.Add(6)
+	wg.Add(4)
 	// Host-Event-Card-Deck
 	go func() {
 		mwkbox := this.searchAliveClient()
@@ -116,34 +116,34 @@ func (this *ULZGameDuelServiceBackend) CreateGame(ctx context.Context, req *pb.G
 		mwkbox.Preserve(false)
 		wg.Done()
 	}()
-	// move-instance
-	go func() {
-		mwkbox := this.searchAliveClient()
-		move_instance := pb.MovePhaseSnapMod{
-			Turns: 0,
-		}
-		if _, err := mwkbox.SetPara(req.RoomKey+move_instance.RdsKeyName(), move_instance); err != nil {
-			log.Println(err)
-			errCh <- status.Errorf(codes.Internal, err.Error())
-		}
-		mwkbox.Preserve(false)
-		wg.Done()
-	}()
-	// ad-phase-instance
-	go func() {
-		mwkbox := this.searchAliveClient()
-		ad_instance := pb.ADPhaseSnapMod{
-			Turns:       0,
-			FirstAttack: 0,
-			EventPhase:  pb.EventHookPhase_start_turn_phase,
-		}
-		if _, err := mwkbox.SetPara(req.RoomKey+ad_instance.RdsKeyName(), ad_instance); err != nil {
-			log.Println(err)
-			errCh <- status.Errorf(codes.Internal, err.Error())
-		}
-		mwkbox.Preserve(false)
-		wg.Done()
-	}()
+	// // move-instance
+	// go func() {
+	// 	mwkbox := this.searchAliveClient()
+	// 	move_instance := pb.MovePhaseSnapMod{
+	// 		Turns: 0,
+	// 	}
+	// 	if _, err := mwkbox.SetPara(req.RoomKey+move_instance.RdsKeyName(), move_instance); err != nil {
+	// 		log.Println(err)
+	// 		errCh <- status.Errorf(codes.Internal, err.Error())
+	// 	}
+	// 	mwkbox.Preserve(false)
+	// 	wg.Done()
+	// }()
+	// // ad-phase-instance
+	// go func() {
+	// 	mwkbox := this.searchAliveClient()
+	// 	ad_instance := pb.ADPhaseSnapMod{
+	// 		Turns:       0,
+	// 		FirstAttack: 0,
+	// 		EventPhase:  pb.EventHookPhase_start_turn_phase,
+	// 	}
+	// 	if _, err := mwkbox.SetPara(req.RoomKey+ad_instance.RdsKeyName(), ad_instance); err != nil {
+	// 		log.Println(err)
+	// 		errCh <- status.Errorf(codes.Internal, err.Error())
+	// 	}
+	// 	mwkbox.Preserve(false)
+	// 	wg.Done()
+	// }()
 	//EffectNodeMod
 	go func() {
 		mwkbox := this.searchAliveClient()

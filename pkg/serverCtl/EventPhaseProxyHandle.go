@@ -4,9 +4,7 @@ import (
 	pb "ULZGameDuelService/proto"
 	"fmt"
 	"log"
-	"math/rand"
 	"sync"
-	"time"
 	// Static files
 	// _ "ULZGameDuelService/statik"
 )
@@ -46,15 +44,18 @@ func (this *ULZGameDuelServiceBackend) proxyHandle(
 		// this.charaChangePhase(gameSet)
 
 	case pb.EventHookPhase_determine_chara_change_phase:
+		// change char -> skip
 
-	//	attack-phase
-	// case pb.EventHookPhase_attack_card_drop_phase:
+		//	attack-phase
+	case pb.EventHookPhase_attack_card_drop_phase:
+		log.Println("atk-card-drop-ph wait for event-phase-confirm")
 	// 		snapADMod, _ := snapMod[0].(*pb.ADPhaseSnapMod)
 	// 		this.attackPhaseHandle(gameSet, snapADMod, phaseMod, effectMod)
 	// 		break
 
 	// 	defence-phase
-	// case pb.EventHookPhase_defence_card_drop_phase:
+	case pb.EventHookPhase_defence_card_drop_phase:
+		log.Println("def-card-drop-ph wait for event-phase-confirm")
 	// 		snapADMod, _ := snapMod[0].(*pb.ADPhaseSnapMod)
 	// 		this.defencePhaseHandle(gameSet, snapADMod, phaseMod, effectMod)
 	// 		break
@@ -84,6 +85,7 @@ func (this *ULZGameDuelServiceBackend) proxyHandle(
 		this.changeInitiativePhase(gameSet, phaseMod)
 
 	case pb.EventHookPhase_finish_turn_phase:
+		this.finishTurnPhase(gameSet, phaseMod)
 
 	case pb.EventHookPhase_gameset_end:
 	}
@@ -101,6 +103,7 @@ func (this *ULZGameDuelServiceBackend) gamesetStart(gameSet *pb.GameDataSet) {
 		CurrentPhase: gameSet.EventPhase,
 		PhaseHook:    gameSet.HookType,
 	})
+
 }
 
 func (this *ULZGameDuelServiceBackend) startTurnPhase(gameSet *pb.GameDataSet) {
@@ -114,170 +117,35 @@ func (this *ULZGameDuelServiceBackend) startTurnPhase(gameSet *pb.GameDataSet) {
 		PhaseHook:    gameSet.HookType,
 	})
 
-}
-
-func (this *ULZGameDuelServiceBackend) refillActionCard(
-	gameSet *pb.GameDataSet,
-	phaseMod *pb.PhaseSnapMod,
-	effectMod *pb.EffectNodeSnapMod,
-) {
-	log.Printf("refill-action-card-phase: turn %v", gameSet.RoomKey)
 	wg := sync.WaitGroup{}
 	wg.Add(2)
-	var hostECInStore, duelECInStore pb.EventCardListSet
-	var hostDrawSet, duelDrawSet []*pb.ECShortHand
-	hostNoMoreCardFlag, duelNoMoreCardFlag := false, false
-	errch := make(chan error)
+	// move-instance
 	go func() {
-		wkbox := this.searchAliveClient()
-		key := gameSet.RoomKey + hostECInStore.RdsKeyName(pb.PlayerSide_HOST)
-		if _, err := (wkbox).GetPara(key, &hostECInStore); err != nil {
-			errch <- err
+		mwkbox := this.searchAliveClient()
+		move_instance := pb.MovePhaseSnapMod{
+			Turns: gameSet.GameTurn,
 		}
-		inDeck := pb.EventCardFilter(hostECInStore.Set, func(v *pb.EventCard) bool {
-			return v.Position == pb.EventCardPos_BLOCK
-		})
-		inHand := pb.EventCardFilter(hostECInStore.Set, func(v *pb.EventCard) bool {
-			return v.Position == pb.EventCardPos_INSIDE
-		})
-		// destoryed := pb.EventCardFilter(hostECToHands.Set, func(v *pb.EventCard) bool {
-		// 	return v.Position == pb.EventCardPos_DESTROY
-		// })
-		numberToDraw := 9 - len(inHand)
-
-		if numberToDraw > len(inDeck) {
-			hostNoMoreCardFlag = true
-			numberToDraw = len(inDeck)
+		if _, err := mwkbox.SetPara(gameSet.RoomKey+move_instance.RdsKeyName(), move_instance); err != nil {
+			log.Println(err)
 		}
-
-		var tmpSet []int32
-		rand.Seed(int64(time.Now().UnixNano()))
-		stoper := 0
-		for stoper < numberToDraw {
-			// rand
-			tmpNum := rand.Intn(len(inDeck))
-			isExist := false
-			for _, v := range tmpSet {
-				if v == inDeck[tmpNum].Id {
-					isExist = true
-				}
-			}
-			if !isExist {
-				tmpSet = append(tmpSet, inDeck[tmpNum].Id)
-				stoper++
-			}
-		}
-		for _, v := range tmpSet {
-			for _, vv := range hostECInStore.Set {
-				if vv.Id == v {
-					vv.Position = pb.EventCardPos_INSIDE
-					hostDrawSet = append(hostDrawSet, vv.ToECShostHand())
-				}
-			}
-		}
-
-		if _, err := (wkbox).SetPara(key, hostECInStore); err != nil {
-			errch <- err
-		}
+		mwkbox.Preserve(false)
 		wg.Done()
 	}()
+	// ad-phase-instance
 	go func() {
-		wkbox := this.searchAliveClient()
-		key := gameSet.RoomKey + duelECInStore.RdsKeyName(pb.PlayerSide_DUELER)
-		if _, err := (wkbox).GetPara(key, &duelECInStore); err != nil {
-			errch <- err
+		mwkbox := this.searchAliveClient()
+		adInstance := pb.ADPhaseSnapMod{
+			Turns:       gameSet.GameTurn,
+			FirstAttack: 0,
+			EventPhase:  pb.EventHookPhase_start_turn_phase,
 		}
-		inDeck := pb.EventCardFilter(duelECInStore.Set, func(v *pb.EventCard) bool {
-			return v.Position == pb.EventCardPos_BLOCK
-		})
-		inHand := pb.EventCardFilter(duelECInStore.Set, func(v *pb.EventCard) bool {
-			return v.Position == pb.EventCardPos_INSIDE
-		})
-		// destoryed := pb.EventCardFilter(hostECToHands.Set, func(v *pb.EventCard) bool {
-		// 	return v.Position == pb.EventCardPos_DESTROY
-		// })
-		numberToDraw := 9 - len(inHand)
-
-		if numberToDraw > len(inDeck) {
-			duelNoMoreCardFlag = true
-			numberToDraw = len(inDeck)
+		if _, err := mwkbox.SetPara(gameSet.RoomKey+adInstance.RdsKeyName(), adInstance); err != nil {
+			log.Println(err)
 		}
-
-		var tmpSet []int32
-		rand.Seed(int64(time.Now().UnixNano()))
-		stoper := 0
-		for stoper < numberToDraw {
-			// rand
-			tmpNum := rand.Intn(len(inDeck))
-			isExist := false
-			for _, v := range tmpSet {
-				if v == inDeck[tmpNum].Id {
-					isExist = true
-				}
-			}
-			if !isExist {
-				tmpSet = append(tmpSet, inDeck[tmpNum].Id)
-				stoper++
-			}
-		}
-		for _, v := range tmpSet {
-			for _, vv := range duelECInStore.Set {
-				if vv.Id == v {
-					vv.Position = pb.EventCardPos_INSIDE
-					duelDrawSet = append(duelDrawSet, vv.ToECShostHand())
-				}
-			}
-		}
-		if _, err := (wkbox).SetPara(key, duelECInStore); err != nil {
-			errch <- err
-		}
+		mwkbox.Preserve(false)
 		wg.Done()
 	}()
 	wg.Wait()
-
-	if hostNoMoreCardFlag {
-		this.BroadCast(&pb.GDBroadcastResp{
-			RoomKey:      gameSet.RoomKey,
-			Msg:          fmt.Sprintf("HostDrawCard"),
-			Command:      pb.CastCmd_GET_DRAW_PHASE_RESULT,
-			CurrentPhase: gameSet.EventPhase,
-			PhaseHook:    gameSet.HookType,
-			InstanceSet:  hostDrawSet,
-		})
-
-	} else {
-		this.BroadCast(&pb.GDBroadcastResp{
-			RoomKey:      gameSet.RoomKey,
-			Msg:          fmt.Sprintf("HostDrawCard:NoMoreCard"),
-			Command:      pb.CastCmd_GET_DRAW_PHASE_RESULT,
-			CurrentPhase: gameSet.EventPhase,
-			PhaseHook:    gameSet.HookType,
-			InstanceSet:  hostDrawSet,
-		})
-	}
-	if duelNoMoreCardFlag {
-		this.BroadCast(&pb.GDBroadcastResp{
-			RoomKey:      gameSet.RoomKey,
-			Msg:          fmt.Sprintf("DuelDrawCard"),
-			Command:      pb.CastCmd_GET_DRAW_PHASE_RESULT,
-			CurrentPhase: gameSet.EventPhase,
-			PhaseHook:    gameSet.HookType,
-			InstanceSet:  duelDrawSet,
-		})
-	} else {
-		this.BroadCast(&pb.GDBroadcastResp{
-			RoomKey:      gameSet.RoomKey,
-			Msg:          fmt.Sprintf("DuelDrawCard:NoMoreCard"),
-			Command:      pb.CastCmd_GET_DRAW_PHASE_RESULT,
-			CurrentPhase: gameSet.EventPhase,
-			PhaseHook:    gameSet.HookType,
-			InstanceSet:  duelDrawSet,
-		})
-	}
-	log.Printf("Rm %s: End of Draw Card proxy, wait for draw-confirm", gameSet.RoomKey)
-	/**
-	 * since the effect-node will done by executeEffectNode in move-next-phase
-	 */
 }
 
 func (this *ULZGameDuelServiceBackend) deadCharaChangePhase(gameSet *pb.GameDataSet) {}
@@ -293,8 +161,9 @@ func (this *ULZGameDuelServiceBackend) changeInitiativePhase(
 	} else if phaseMod.CurrAttack == pb.PlayerSide_DUELER {
 		phaseMod.CurrAttack = pb.PlayerSide_HOST
 	}
-
-	// gameSet.CurrPhase
 }
 
-func (this *ULZGameDuelServiceBackend) finishTurnPhase(gameSet *pb.GameDataSet) {}
+func (this *ULZGameDuelServiceBackend) finishTurnPhase(gameSet *pb.GameDataSet, phaseMod *pb.PhaseSnapMod) {
+	//  force reset ready flag
+
+}

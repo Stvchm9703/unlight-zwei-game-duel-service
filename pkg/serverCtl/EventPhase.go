@@ -236,8 +236,9 @@ func (this *ULZGameDuelServiceBackend) moveNextPhase(
 	 */
 	this.executeEffectNode(gameDS, phaseMod, effectMod)
 	wg := sync.WaitGroup{}
-	wg.Add(3)
 
+	// =======================================================================
+	wg.Add(3)
 	go func() {
 		wkbox := this.searchAliveClient()
 		wkbox.SetPara(gameDS.RoomKey, gameDS)
@@ -262,6 +263,7 @@ func (this *ULZGameDuelServiceBackend) moveNextPhase(
 		this.proxyHandle(gameDS, phaseMod, effectMod, snapMod)
 		return
 	}
+	// =======================================================================
 
 	nextPhase, nextType := upnextEventPhase(phaseMod.EventPhase, phaseMod.HookType)
 
