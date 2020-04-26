@@ -375,7 +375,7 @@ func (rc *RdsCliBox) CleanRem() (bool, error) {
 	// defer rc.unlock()
 	list, err := rc.ListRem()
 	if err != nil {
-		return false, nil
+		return false, err
 	}
 	for _, v := range *list {
 		if _, err := rc.conn.Del(v).Result(); err != nil {

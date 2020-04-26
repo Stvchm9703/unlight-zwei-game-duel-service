@@ -48,8 +48,8 @@ func New(conf *cf.ConfTmp) *ULZGameDuelServiceBackend {
 			rdfl = append(rdfl, rdf)
 		}
 	}
-	skc := sr.ClientListInit("ScriptRunner", conf.EffectCalcService)
-	nc, _ := nats.Connect(fmt.Sprintf("%s:%v", conf.NatsConn.ConnType))
+	// skc := sr.ClientListInit("ScriptRunner", conf.EffectCalcService)
+	// nc, _ := nats.Connect(fmt.Sprintf("%s:%v", conf.NatsConn.ConnType))
 	g := ULZGameDuelServiceBackend{
 		CoreKey:     ck,
 		mu:          &sync.Mutex{},
@@ -71,6 +71,7 @@ func (this *ULZGameDuelServiceBackend) Shutdown() {
 
 	log.Println("in shutdown proc")
 	for _, v := range this.redhdlr {
+		fmt.Println(v)
 		if _, err := v.CleanRem(); err != nil {
 			log.Println(err)
 		}
