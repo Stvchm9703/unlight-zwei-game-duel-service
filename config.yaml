@@ -59,3 +59,7 @@ effect_calc_service:
     ip : 192.168.0.110
     port: 13000
     service_name : ScriptRunner
+  - conn_type: grpc
+    ip : 192.168.0.110
+    port: 13100
+    service_name : ScriptRunner
