@@ -33,7 +33,7 @@ func (rsb *ULZGameDuelServiceBackend) BroadCast(cp *pb.GDBroadcastResp) error {
 	if err != nil {
 		return err
 	}
-	rsb.natscli.Publish(cp.RoomKey, msgpt)
+	rsb.natscli.Publish(rsb.ServiceName()+"/"+cp.RoomKey, msgpt)
 	return nil
 }
 

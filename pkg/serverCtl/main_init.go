@@ -31,13 +31,17 @@ type ULZGameDuelServiceBackend struct {
 	// castServer  *ws.SocketHub
 }
 
+func (backend *ULZGameDuelServiceBackend) ServiceName() string {
+	return "ULZ.GDSvc"
+}
+
 type RoomStreamBox struct {
 	clientConn map[string]*pb.GameDuelService_ServerBroadcastServer
 }
 
 // New : Create new backend
 func New(conf *cf.ConfTmp) *ULZGameDuelServiceBackend {
-	ck := "RSCore" + cm.HashText(conf.APIServer.IP)
+	ck := "ULZ.GDSvc" + cm.HashText(conf.APIServer.IP)
 	rdfl := []*rd.RdsCliBox{}
 	for i := 0; i < conf.CacheDb.WorkerNode; i++ {
 		rdf := rd.New(ck, "wKU"+cm.HashText("num"+strconv.Itoa(i)))
