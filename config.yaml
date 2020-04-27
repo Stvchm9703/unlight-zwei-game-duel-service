@@ -1,17 +1,20 @@
-tmpl_server:
-  ip: 192.168.0.102
-  port: 13000
-  root_path: ""
-  main_path: ""
-  static_filepath: ""
-  static_outpath: ""
-  template_filepath: ""
-  template_outpath: ""
+# unlight-zwei: room-service 
+#   for develop pc  
+
+  # tmpl_server:
+  #   ip: 192.168.0.102
+  #   port: 13000
+  #   root_path: ""
+  #   main_path: ""
+  #   static_filepath: ""
+  #   static_outpath: ""
+  #   template_filepath: ""
+  #   template_outpath: ""
 
 api_server:
   conn_type: grpc
   ip: 192.168.0.102
-  port: 12000
+  port: 13000
   max_pool_size: 20
   api_refer_type: proto
   api_table_filepath: "'./proto/','./'"
@@ -45,21 +48,23 @@ auth_server:
   api_table_filepath: "'./proto/','./'"
   api_outpath: "api/"
 
+
 nats_conn:
-  conn_type: tcp
-  ip: 192.168.0.110
+  connector: "nats"
+  worker_node: 12
+  host: "192.168.0.110"
   port: 4222
-  max_pool_size: 1
-  api_refer_type: proto
-  api_table_filepath: "'./proto/','./'"
-  api_outpath: "api/"
+  username: ""
+  password: ""
+  filepath: ""
+
 
 effect_calc_service:
   - conn_type: grpc
     ip : 192.168.0.110
-    port: 13000
+    port: 13100
     service_name : ScriptRunner
   - conn_type: grpc
     ip : 192.168.0.110
-    port: 13100
+    port: 13200
     service_name : ScriptRunner

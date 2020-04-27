@@ -41,7 +41,7 @@ type RoomStreamBox struct {
 
 // New : Create new backend
 func New(conf *cf.ConfTmp) *ULZGameDuelServiceBackend {
-	ck := "ULZ.GDSvc" + cm.HashText(conf.APIServer.IP)
+	ck := "ULZ.GDSvc." + cm.HashText(conf.APIServer.IP+time.Now().String())
 	rdfl := []*rd.RdsCliBox{}
 	for i := 0; i < conf.CacheDb.WorkerNode; i++ {
 		rdf := rd.New(ck, "wKU"+cm.HashText("num"+strconv.Itoa(i)))
@@ -55,7 +55,7 @@ func New(conf *cf.ConfTmp) *ULZGameDuelServiceBackend {
 	skc := sr.ClientListInit("ScriptRunner", conf.EffectCalcService)
 
 	sd := nats.Options{
-		Url:            fmt.Sprintf("%s://%s:%v", conf.NatsConn.ConnType, conf.NatsConn.IP, conf.NatsConn.Port),
+		Url:            fmt.Sprintf("%s://%s:%v", conf.NatsConn.Connector, conf.NatsConn.Host, conf.NatsConn.Port),
 		AllowReconnect: true,
 		MaxReconnect:   10,
 		ReconnectWait:  5 * time.Second,
@@ -86,7 +86,6 @@ func (this *ULZGameDuelServiceBackend) Shutdown() {
 
 	log.Println("in shutdown proc")
 	for _, v := range this.redhdlr {
-		fmt.Println(v)
 		if _, err := v.CleanRem(); err != nil {
 			log.Println(err)
 		}
