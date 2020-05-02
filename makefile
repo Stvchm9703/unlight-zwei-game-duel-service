@@ -1,3 +1,11 @@
+# SECETION: env :
+LOGPATH = ./.log
+LOGFILE = $(LOGPATH)/$(shell date --iso=seconds).log
+
+test_run:
+	go run main.go start -c=config.test_server.yaml -m=test > $(LOGFILE) 2>&1 &
+
+
 generate_vcred:
 	protoc \
 		-I proto/ \
