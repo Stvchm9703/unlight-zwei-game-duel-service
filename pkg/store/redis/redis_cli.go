@@ -330,10 +330,10 @@ func (rc *RdsCliBox) SetParaWTO(key *string, value interface{}, timeout int) (bo
 }
 
 // RemovePara : remove the k-v
-func (rc *RdsCliBox) RemovePara(key *string) (bool, error) {
+func (rc *RdsCliBox) RemovePara(key string) (bool, error) {
 	rc.lock()
 	defer rc.unlock()
-	res, err := rc.conn.Del(rc.CoreKey + "/_" + rc.Key + "." + *key).Result()
+	res, err := rc.conn.Del(rc.CoreKey + "/_" + rc.Key + "." + key).Result()
 	if err != nil {
 		return false, err
 	}

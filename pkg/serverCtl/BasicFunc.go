@@ -4,6 +4,7 @@ import (
 	cm "ULZGameDuelService/pkg/common"
 	pb "ULZGameDuelService/proto"
 	"context"
+	"fmt"
 	"log"
 	"sync"
 	"time"
@@ -208,7 +209,38 @@ func (this *ULZGameDuelServiceBackend) GetGameData(ctx context.Context, req *pb.
 	return &tmp, nil
 }
 
-func (this *ULZGameDuelServiceBackend) QuitGame(context.Context, *pb.GDCreateReq) (*pb.Empty, error) {
-	return nil, status.Error(codes.Unimplemented, "CREATE_GAME")
+func (this *ULZGameDuelServiceBackend) QuitGame(ctx context.Context, req *pb.GDCreateReq) (*pb.Empty, error) {
+	cm.PrintReqLog(ctx, "quit-room", req)
+
+	start := time.Now()
+	this.mu.Lock()
+	wkbox := this.searchAliveClient()
+	defer func() {
+		this.mu.Unlock()
+		elapsed := time.Since(start)
+		log.Printf("Get-Room took %s", elapsed)
+		(wkbox).Preserve(false)
+	}()
+
+	var tmp pb.GameDataSet
+	if _, err := wkbox.GetPara(req.RoomKey, &tmp); err != nil {
+		log.Println(err)
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	if _, err := wkbox.RemovePara(req.RoomKey); err != nil {
+		log.Println(err)
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	go this.BroadCast(&pb.GDBroadcastResp{
+		RoomKey:      req.RoomKey,
+		Msg:          fmt.Sprintf("QuitGame:%s"),
+		Command:      pb.CastCmd_INSTANCE_STATUS_CHANGE,
+		CurrentPhase: tmp.EventPhase,
+		PhaseHook:    tmp.HookType,
+	})
+
+	// return nil, status.Error(codes.Unimplemented, "CREATE_GAME")
+	return &pb.Empty{}, nil
 
 }
