@@ -26,7 +26,7 @@ var (
 
 func ServerMainProcess(testing_config *cf.ConfTmp) {
 	log.Println("start run")
-	addr := fmt.Sprintf(":%v", testing_config.APIServer.Port)
+	addr := fmt.Sprintf("%v:%v", testing_config.APIServer.IP, testing_config.APIServer.Port)
 	lis, err := net.Listen("tcp", addr)
 	if err != nil {
 		panic("Failed to listen:\t" + err.Error())
