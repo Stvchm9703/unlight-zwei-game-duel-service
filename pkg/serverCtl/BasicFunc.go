@@ -38,8 +38,8 @@ func (this *ULZGameDuelServiceBackend) CreateGame(ctx context.Context, req *pb.G
 			log.Println(err)
 			return nil, status.Errorf(codes.NotFound, err.Error())
 		}
-		return &returner, status.Error(codes.AlreadyExists, "create-game,the room exist 1")
 		wkbox.Preserve(false)
+		return &returner, status.Error(codes.AlreadyExists, "create-game,the room exist 1")
 	}
 	gameSetKey := req.RoomKey
 	new_gameset := pb.GameDataSet{
@@ -64,6 +64,7 @@ func (this *ULZGameDuelServiceBackend) CreateGame(ctx context.Context, req *pb.G
 	// new_gameset.HostEvent
 	// return nil, status.Error(codes.Unimplemented, "CREATE_GAME")
 	// Set Para
+	fmt.Println("\t GameSet gen")
 	if _, err := wkbox.SetPara(gameSetKey, new_gameset); err != nil {
 		log.Println(err)
 		wkbox.Preserve(false)
@@ -76,6 +77,7 @@ func (this *ULZGameDuelServiceBackend) CreateGame(ctx context.Context, req *pb.G
 	new_gameset.DuelEventCardDeck = genCardSet(150, 0)
 	wg.Add(4)
 	// Host-Event-Card-Deck
+	fmt.Println("\t Host-Event-Deck-Card gen")
 	go func() {
 		mwkbox := this.searchAliveClient()
 		var set pb.EventCardListSet
@@ -88,18 +90,20 @@ func (this *ULZGameDuelServiceBackend) CreateGame(ctx context.Context, req *pb.G
 		wg.Done()
 	}()
 	// Duel-Event-Card-Deck
+	fmt.Println("\t Duel-Event-Deck-Card gen")
 	go func() {
 		mwkbox := this.searchAliveClient()
 		var set pb.EventCardListSet
 		set.Set = new_gameset.DuelEventCardDeck
 		if _, err := mwkbox.SetPara(req.RoomKey+set.RdsKeyName(pb.PlayerSide_DUELER), set); err != nil {
-			panic(err)
+			log.Println(err)
 			errCh <- status.Errorf(codes.Internal, err.Error())
 		}
 		mwkbox.Preserve(false)
 		wg.Done()
 	}()
 	// PhaseSnapMod
+	fmt.Println("\t Phase-Snap-Mod gen")
 	go func() {
 		mwkbox := this.searchAliveClient()
 		phase_inst := pb.PhaseSnapMod{
@@ -117,35 +121,9 @@ func (this *ULZGameDuelServiceBackend) CreateGame(ctx context.Context, req *pb.G
 		mwkbox.Preserve(false)
 		wg.Done()
 	}()
-	// // move-instance
-	// go func() {
-	// 	mwkbox := this.searchAliveClient()
-	// 	move_instance := pb.MovePhaseSnapMod{
-	// 		Turns: 0,
-	// 	}
-	// 	if _, err := mwkbox.SetPara(req.RoomKey+move_instance.RdsKeyName(), move_instance); err != nil {
-	// 		log.Println(err)
-	// 		errCh <- status.Errorf(codes.Internal, err.Error())
-	// 	}
-	// 	mwkbox.Preserve(false)
-	// 	wg.Done()
-	// }()
-	// // ad-phase-instance
-	// go func() {
-	// 	mwkbox := this.searchAliveClient()
-	// 	ad_instance := pb.ADPhaseSnapMod{
-	// 		Turns:       0,
-	// 		FirstAttack: 0,
-	// 		EventPhase:  pb.EventHookPhase_start_turn_phase,
-	// 	}
-	// 	if _, err := mwkbox.SetPara(req.RoomKey+ad_instance.RdsKeyName(), ad_instance); err != nil {
-	// 		log.Println(err)
-	// 		errCh <- status.Errorf(codes.Internal, err.Error())
-	// 	}
-	// 	mwkbox.Preserve(false)
-	// 	wg.Done()
-	// }()
+
 	//EffectNodeMod
+	fmt.Println("\t Effect-Node-Mod gen")
 	go func() {
 		mwkbox := this.searchAliveClient()
 		ef_instance := pb.EffectNodeSnapMod{
