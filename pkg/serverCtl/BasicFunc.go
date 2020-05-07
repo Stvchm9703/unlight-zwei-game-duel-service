@@ -42,6 +42,8 @@ func (this *ULZGameDuelServiceBackend) CreateGame(ctx context.Context, req *pb.G
 		return &returner, status.Error(codes.AlreadyExists, "create-game,the room exist 1")
 	}
 	gameSetKey := req.RoomKey
+
+	fmt.Println("\t GameSet gen")
 	new_gameset := pb.GameDataSet{
 		// by request
 		RoomKey:         req.RoomKey,
@@ -64,12 +66,14 @@ func (this *ULZGameDuelServiceBackend) CreateGame(ctx context.Context, req *pb.G
 	// new_gameset.HostEvent
 	// return nil, status.Error(codes.Unimplemented, "CREATE_GAME")
 	// Set Para
-	fmt.Println("\t GameSet gen")
 	if _, err := wkbox.SetPara(gameSetKey, new_gameset); err != nil {
 		log.Println(err)
 		wkbox.Preserve(false)
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
+	wkbox.Preserve(false)
+
+	fmt.Println("\t GameSet compl")
 	wg := sync.WaitGroup{}
 	errCh := make(chan error)
 	// event-card-control
@@ -87,6 +91,7 @@ func (this *ULZGameDuelServiceBackend) CreateGame(ctx context.Context, req *pb.G
 			errCh <- status.Errorf(codes.Internal, err.Error())
 		}
 		mwkbox.Preserve(false)
+		fmt.Println("\t Host-Event-Deck-Card compl")
 		wg.Done()
 	}()
 	// Duel-Event-Card-Deck
@@ -100,6 +105,7 @@ func (this *ULZGameDuelServiceBackend) CreateGame(ctx context.Context, req *pb.G
 			errCh <- status.Errorf(codes.Internal, err.Error())
 		}
 		mwkbox.Preserve(false)
+		fmt.Println("\t Duel-Event-Deck-Card compl")
 		wg.Done()
 	}()
 	// PhaseSnapMod
@@ -119,6 +125,8 @@ func (this *ULZGameDuelServiceBackend) CreateGame(ctx context.Context, req *pb.G
 			errCh <- status.Errorf(codes.Internal, err.Error())
 		}
 		mwkbox.Preserve(false)
+		fmt.Println("\t Phase-Snap-Mod compl")
+
 		wg.Done()
 	}()
 
@@ -137,13 +145,14 @@ func (this *ULZGameDuelServiceBackend) CreateGame(ctx context.Context, req *pb.G
 			// return nil, status.Errorf(codes.Internal, err.Error())
 		}
 		mwkbox.Preserve(false)
+		fmt.Println("\t Effect-Node-Mod compl")
 		wg.Done()
 	}()
 	wg.Wait()
 	if errRes := <-errCh; errRes != nil {
 		return nil, errRes
 	}
-	wkbox.Preserve(false)
+
 	return &new_gameset, nil
 }
 
