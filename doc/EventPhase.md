@@ -6,7 +6,7 @@
 - [Protocol Documentation](#protocol-documentation)
   - [Table of Contents](#table-of-contents)
   - [EventHookPhase.proto](#eventhookphaseproto)
-  - [### EventHookPhase](#h3-id%22eventhookphase-33%22eventhookphaseh3)
+    - [EventHookPhase](#eventhookphase)
     - [EventHookType](#eventhooktype)
   - [Scalar Value Types](#scalar-value-types)
   
@@ -15,18 +15,18 @@
 
 
 <a name="EventHookPhase.proto"></a>
+
 <p align="right"><a href="#top">Top</a></p>
 
 ## EventHookPhase.proto
 
-
  
 
+----------------------------------------------------
 
 <a name="ULZProto.EventHookPhase"></a>
 
 ### EventHookPhase
-----------------------------------------------------
 ANCHOR EventHookPhase.proto
 SECTION: EventHookPhase.proto
 
