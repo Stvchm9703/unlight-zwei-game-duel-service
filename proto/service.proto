@@ -11,7 +11,8 @@ option csharp_namespace         = "ULZAsset.ProtoMod";
 // SECTION: service.proto
 service GameDuelService {
 //  Basic Server Function
-    rpc ServerBroadcast     (GDGetInfoReq)              returns (stream GDBroadcastResp);
+
+    // rpc ServerBroadcast     (GDGetInfoReq)              returns (stream GDBroadcastResp);
     rpc CreateGame          (GDCreateReq)               returns (       GameDataSet);
     rpc GetGameData         (GDGetInfoReq)              returns (       GameDataSet);
     rpc QuitGame            (GDCreateReq)               returns (       Empty);
