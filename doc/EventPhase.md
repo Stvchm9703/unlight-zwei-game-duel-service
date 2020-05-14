@@ -51,7 +51,94 @@ SECTION: EventHookPhase.proto
 | finish_turn_phase                 | 16     | endof turn lifecycle |
 | gameset_end                       | 17     | endof game set       |
 
+```mermaid 
+stateDiagram 
+gameset_start --> Turn_cycle
+Turn_cycle --> gameset_end
 
+state Turn_cycle {
+  [*] --> start_turn_phase 
+  start_turn_phase --> Draw_Phase 
+  Draw_Phase --> Move_Phase
+  Move_Phase --> ADPhase
+  AD_Phase --> change_initiative_phase 
+
+  state change_initiative_phase <<fork>>
+    change_initiative_phase --> AD_Phase
+    change_initiative_phase --> finish_turn_phase
+
+  finish_turn_phase --> [*]
+  finish_turn_phase --> start_turn_phase
+  
+  state Draw_Phase {
+    [*] -->   refill_action_card_phase 
+    refill_action_card_phase --> [*]
+  }
+
+  state Move_Phase {
+    [*] --> move_card_phase
+    move_card_phase --> determine_move_phase
+    determine_move_phase --> finish_move_phase
+    state finish_move_phase <<fork>>
+      finish_move_phase --> chara_change_phase
+      chara_change_phase--> determine_chara_change_phase 
+      determine_chara_change_phase --> [*]
+      finish_move_phase --> [*]
+  }
+
+  state AD_Phase{
+    [*] --> attack_card_drop_phase 
+    attack_card_drop_phase --> defence_card_drop_phase
+    defence_card_drop_phase --> determine_battle_point_phase
+    determine_battle_point_phase --> battle_result_phase
+    battle_result_phase --> damage_phase
+    state damage_phase <<fork>>
+      damage_phase --> dead_chara_change_phase 
+      dead_chara_change_phase --> determine_dead_chara_change_phase
+      determine_dead_chara_change_phase --> [*]
+      damage_phase  --> [*]
+  }
+}
+
+```
+
+
+```mermaid 
+stateDiagram 
+gameset_start --> start_turn_phase 
+start_turn_phase --> refill_action_card_phase 
+refill_action_card_phase --> move_card_phase
+move_card_phase --> determine_move_phase
+determine_move_phase --> finish_move_phase
+state finish_move_phase <<fork>>
+  finish_move_phase --> chara_change_phase
+  chara_change_phase--> determine_chara_change_phase 
+  determine_chara_change_phase --> attack_card_drop_phase
+  finish_move_phase --> attack_card_drop_phase
+
+
+attack_card_drop_phase --> defence_card_drop_phase
+defence_card_drop_phase --> determine_battle_point_phase
+determine_battle_point_phase --> battle_result_phase
+battle_result_phase --> damage_phase
+state damage_phase <<fork>>
+  damage_phase --> dead_chara_change_phase 
+  dead_chara_change_phase --> determine_dead_chara_change_phase
+  determine_dead_chara_change_phase --> change_initiative_phase
+  damage_phase  --> change_initiative_phase
+
+
+state change_initiative_phase <<fork>>
+  change_initiative_phase --> attack_card_drop_phase
+  change_initiative_phase --> finish_turn_phase
+
+  finish_turn_phase --> [*]
+  finish_turn_phase --> start_turn_phase
+  
+ 
+
+
+```
 
 <a name="ULZProto.EventHookType"></a>
 
