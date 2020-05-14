@@ -1,0 +1,1343 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <title>Protocol Documentation</title>
+
+  <link rel="stylesheet"
+    href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+  <link rel="stylesheet"
+    href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+
+  <style>
+    .task-list-item {
+      list-style-type: none;
+    }
+
+    .task-list-item-checkbox {
+      margin-left: -20px;
+      vertical-align: middle;
+    }
+  </style>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', 'Ubuntu', 'Droid Sans', sans-serif;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+  </style>
+
+
+</head>
+
+<body class="vscode-light">
+  <h1 id="protocol-documentation">Protocol Documentation</h1>
+  <p><a name="top"></a></p>
+  <h2 id="table-of-contents">Table of Contents</h2>
+  <ul>
+    <li>
+      <p><a href="#protocol-documentation">Protocol Documentation</a></p>
+      <ul>
+        <li><a href="#table-of-contents">Table of Contents</a></li>
+        <li><a href="#serviceproto">service.proto</a>
+          <ul>
+            <li><a href="#gameduelservice">GameDuelService</a></li>
+            <li><a href="#general-function">General function</a>
+              <ul>
+                <li><a href="#creategame">CreateGame</a>
+                  <ul>
+                    <li><a href="#work-flow">Work Flow</a></li>
+                  </ul>
+                </li>
+                <li><a href="#getgamedata">GetGameData</a>
+                  <ul>
+                    <li><a href="#work-flow-1">Work Flow</a></li>
+                  </ul>
+                </li>
+                <li><a href="#quitgame">QuitGame</a>
+                  <ul>
+                    <li><a href="#work-flow-2">Work Flow</a></li>
+                  </ul>
+                </li>
+                <li><a href="#instseteventcard">InstSetEventCard</a></li>
+              </ul>
+            </li>
+            <li><a href="#event-phase--common-handle">Event Phase : Common handle</a>
+              <ul>
+                <li><a href="#eventphaseconfirm">EventPhaseConfirm</a></li>
+                <li><a href="#eventphaseresult">EventPhaseResult</a></li>
+                <li><a href="#work-flow-3">work flow</a></li>
+              </ul>
+            </li>
+            <li><a href="#draw-phase">Draw Phase</a>
+              <ul>
+                <li><a href="#drawphaseconfirm">DrawPhaseConfirm</a></li>
+                <li><a href="#work-flow-4">Work Flow</a></li>
+              </ul>
+            </li>
+            <li><a href="#move-phase">Move PHase</a>
+              <ul>
+                <li><a href="#movephaseconfirm">MovePhaseConfirm</a></li>
+                <li><a href="#movephaseresult">MovePhaseResult</a></li>
+                <li><a href="#work-flow-5">Work Flow</a></li>
+              </ul>
+            </li>
+            <li><a href="#attack--defence-phase">Attack / Defence Phase</a>
+              <ul>
+                <li><a href="#adphaseconfirm">ADPhaseConfirm</a>
+                  <ul>
+                    <li><a href="#work-flow-for-attacker-attack-card-drop-phase">Work Flow for Attacker
+                        (Attack-Card-Drop-Phase)</a></li>
+                    <li><a href="#work-flow-for-defence-defence-card-drop-phase">Work Flow for Defence
+                        (Defence-Card-Drop-Phase)</a></li>
+                  </ul>
+                </li>
+                <li><a href="#adphaseresult">ADPhaseResult</a>
+                  <ul>
+                    <li><a href="#work-flow-6">Work Flow</a></li>
+                  </ul>
+                </li>
+                <li><a href="#adphasediceresult">ADPhaseDiceResult</a></li>
+              </ul>
+            </li>
+            <li><a href="#change-phase">Change Phase</a>
+              <ul>
+                <li><a href="#changephaseconfirm">ChangePhaseConfirm</a></li>
+                <li><a href="#changephaseresult">ChangePhaseResult</a></li>
+              </ul>
+            </li>
+          </ul>
+        </li>
+        <li><a href="#scalar-value-types">Scalar Value Types</a></li>
+      </ul>
+    </li>
+    <li>
+      <p><a href="#scalar-value-types">Scalar Value Types</a></p>
+    </li>
+  </ul>
+  <p><a name="service.proto"></a></p>
+  <p align="right"><a href="#top">Top</a></p>
+  <h2 id="serviceproto">service.proto</h2>
+  <p><a name="ULZProto.GameDuelService"></a></p>
+  <h3 id="gameduelservice">GameDuelService</h3>
+  <p>ANCHOR: service-func for GameDuelService
+    SECTION: service.proto</p>
+  <p>Basic Server Function</p>
+  <table>
+    <thead>
+      <tr>
+        <th>Method Name</th>
+        <th>Request Type</th>
+        <th>Response Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>CreateGame</td>
+        <td><a href="#ULZProto.GDCreateReq">GDCreateReq</a></td>
+        <td><a href="#ULZProto.GameDataSet">GameDataSet</a></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td>GetGameData</td>
+        <td><a href="#ULZProto.GDGetInfoReq">GDGetInfoReq</a></td>
+        <td><a href="#ULZProto.GameDataSet">GameDataSet</a></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td>QuitGame</td>
+        <td><a href="#ULZProto.GDCreateReq">GDCreateReq</a></td>
+        <td><a href="#ULZProto.Empty">Empty</a></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td>InstSetEventCard</td>
+        <td><a href="#ULZProto.GDInstanceDT">GDInstanceDT</a></td>
+        <td><a href="#ULZProto.Empty">Empty</a></td>
+        <td>GameSet Logic Function instance card move</td>
+      </tr>
+      <tr>
+        <td>DrawPhaseConfirm</td>
+        <td><a href="#ULZProto.GDGetInfoReq">GDGetInfoReq</a></td>
+        <td><a href="#ULZProto.Empty">Empty</a></td>
+        <td>Draw-phase : confirm NOTE: After Broadcast Send &lt; [ refill_action_card_phase ]&gt;, Client set the
+          event-card by &lt; InstSetEventCard &gt; { from their deck to own hand }; then, send this &lt;
+          DrawPhaseConfirm &gt; to notify the server that
+          <code>client ready to start next phase [move_card_drop_phase]</code></td>
+      </tr>
+      <tr>
+        <td>MovePhaseConfirm</td>
+        <td><a href="#ULZProto.GDMoveConfirmReq">GDMoveConfirmReq</a></td>
+        <td><a href="#ULZProto.Empty">Empty</a></td>
+        <td>Move-phase : confirm NOTE: After Broadcast Send &lt; [ move_card_drop_phase ]&gt;, Client set the event-card
+          by &lt; InstSetEventCard &gt; { from their own hand to out-side }; Then send this &lt; MovePhaseConfirm &gt;
+          to notify the server that <code>client ready to start next phase [determine_move_phase]</code></td>
+      </tr>
+      <tr>
+        <td>MovePhaseResult</td>
+        <td><a href="#ULZProto.GDGetInfoReq">GDGetInfoReq</a></td>
+        <td><a href="#ULZProto.GDMoveConfirmResp">GDMoveConfirmResp</a></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td>ADPhaseConfirm</td>
+        <td><a href="#ULZProto.GDADConfirmReq">GDADConfirmReq</a></td>
+        <td><a href="#ULZProto.Empty">Empty</a></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td>ADPhaseResult</td>
+        <td><a href="#ULZProto.GDGetInfoReq">GDGetInfoReq</a></td>
+        <td><a href="#ULZProto.GDADResultResp">GDADResultResp</a></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td>ADPhaseDiceResult</td>
+        <td><a href="#ULZProto.GDGetInfoReq">GDGetInfoReq</a></td>
+        <td><a href="#ULZProto.GDADDiceResult">GDADDiceResult</a></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td>ChangePhaseConfirm</td>
+        <td><a href="#ULZProto.GDChangeConfirmReq">GDChangeConfirmReq</a></td>
+        <td><a href="#ULZProto.Empty">Empty</a></td>
+        <td>ChangeCharaPhase : Confirm and Result FIXME : 3v3 may need it, but 1v1 is not implement;</td>
+      </tr>
+      <tr>
+        <td>ChangePhaseResult</td>
+        <td><a href="#ULZProto.GDGetInfoReq">GDGetInfoReq</a></td>
+        <td><a href="#ULZProto.Empty">Empty</a></td>
+        <td>ChangeCharaPhase : Confirm and Result FIXME : 3v3 may need it, but 1v1 is not implement;</td>
+      </tr>
+      <tr>
+        <td>EventPhaseConfirm</td>
+        <td><a href="#ULZProto.GDPhaseConfirmReq">GDPhaseConfirmReq</a></td>
+        <td><a href="#ULZProto.Empty">Empty</a></td>
+        <td>Event-Phase : Confirm NOTE: Once the Server send any phase notify the client may send feedback to server
+          that ready for phase</td>
+      </tr>
+      <tr>
+        <td>EventPhaseResult</td>
+        <td><a href="#ULZProto.GDGetInfoReq">GDGetInfoReq</a></td>
+        <td><a href="#ULZProto.GDPhaseConfirmResp">GDPhaseConfirmResp</a></td>
+        <td>Event-Phase : Confirm NOTE: Once the Server send any phase notify the client may send feedback to server
+          that ready for phase</td>
+      </tr>
+    </tbody>
+  </table>
+  <hr>
+  <h3 id="general-function">General function</h3>
+  <h4 id="creategame">CreateGame</h4>
+  <p>create gameset data to Redis</p>
+  <ul>
+    <li>Request : <a href="#ULZProto.GDCreateReq">GDCreateReq</a></li>
+    <li>Response : <a href="#ULZProto.GameDataSet">GameDataSet</a></li>
+  </ul>
+  <h5 id="work-flow">Work Flow</h5>
+  <p>remark: the gameset not pack <code>HostEventCardDeck</code> , <code>DuelEventCardDeck</code> ,
+    <code>PhaseSnapMod</code>, <code>EffectNodeSnapMod</code> into same Redis store position, since it will grow larger
+    and usually get/set during the game.</p>
+  <pre><code class="language-mermaid"><code><div class="mermaid">sequenceDiagram 
+participant OGC as Other Game Client
+participant GC as Game Client
+participant GDS as Game Duel Service
+participant Rds as Redis
+
+  GC --&gt;&gt; GDS: CreateGame ( GDCreateReq )
+
+  Note over GC,Rds : check Room is Exist 
+  GDS --&gt;&gt; Rds: Get RoomService-Room by Room key
+  Rds --&gt;&gt; GDS: return room 
+  opt Redis execution error
+    GDS --&gt;&gt; GC: return Error (code = Not Found) 
+  end
+
+  Note over GC,Rds : Create the Data set
+  GDS --&gt;&gt; GDS: Create GameDataSet
+  GDS --&gt;&gt; Rds: Set the GameSet to Redis
+  opt Redis execution error
+    GDS --&gt;&gt; GC: return Error (code = Not Found) 
+  end
+  
+
+  Note over GC,Rds : Create the other related data set
+  GDS --&gt;&gt; GDS: Generate Host Event-Card Deck
+  GDS --&gt;&gt; GDS: Generate Duel Event-Card Deck
+
+  par: Host Event Card Deck Dataset  
+    GDS --&gt;&gt; Rds: Set HostEventCardDeck (EventCardList) into Redis
+    opt Redis execution error
+      GDS --&gt;&gt; GC: return Error (code = Not Found) 
+    end
+
+  and: Duel Event Card Deck Dataset 
+    GDS --&gt;&gt; Rds: Set DuelEventCardDeck (EventCardList) into Redis
+    opt Redis execution error
+      GDS --&gt;&gt; GC: return Error (code = Not Found) 
+    end
+
+  and: PhaseSnapMod Dataset 
+    GDS --&gt;&gt; Rds: Set Phase Snap Mod into Redis
+    opt Redis execution error
+      GDS --&gt;&gt; GC: return Error (code = Not Found) 
+    end
+  
+  and: EffectNodeMod Dataset 
+    GDS --&gt;&gt; Rds: Set Effect Node Mod into Redis
+    opt Redis execution error
+      GDS --&gt;&gt; GC: return Error (code = Not Found) 
+    end
+
+  end
+
+  Note over GC,Rds : Return the new gameset dataset
+  GDS -&gt;&gt; GC: return GameDataSet  
+
+  GDS --&gt;&gt; OGC: broadcast: &quot;Gameset ready&quot;
+
+</div></code></code></pre>
+  <h4 id="getgamedata">GetGameData</h4>
+  <p>get the gameset data from Redis</p>
+  <ul>
+    <li>Request : <a href="#ULZProto.GDGetInfoReq">GDGetInfoReq</a></li>
+    <li>Response : <a href="#ULZProto.GameDataSet">GameDataSet</a></li>
+  </ul>
+  <h5 id="work-flow-1">Work Flow</h5>
+  <pre><code class="language-mermaid"><code><div class="mermaid">sequenceDiagram 
+%% participant OGC as Other Game Client
+participant GC as Game Client
+participant GDS as Game Duel Service
+participant Rds as Redis
+
+  GC --&gt;&gt; GDS: CreateGame ( GDCreateReq )
+
+  Note over GC,Rds : Get the Data set if exist
+  GDS --&gt;&gt; Rds: Get the GameSet to Redis
+  opt Redis execution error
+    GDS --&gt;&gt; GC: return Error (code = Not Found) 
+  end
+
+  Note over GC,Rds : Get the other Data set 
+  par: Host Event Card Deck Dataset  
+    GDS --&gt;&gt; Rds: Get HostEventCardDeck (EventCardList) into Redis
+    opt Redis execution error
+      GDS --&gt;&gt; GC: return Error (code = Not Found) 
+    end
+
+  and: Duel Event Card Deck Dataset 
+    GDS --&gt;&gt; Rds: Get DuelEventCardDeck (EventCardList) into Redis
+    opt Redis execution error
+      GDS --&gt;&gt; GC: return Error (code = Not Found) 
+    end
+
+  and: PhaseSnapMod Dataset 
+    GDS --&gt;&gt; Rds: Get Phase Snap Mod into Redis
+    opt Redis execution error
+      GDS --&gt;&gt; GC: return Error (code = Not Found) 
+    end
+  
+  and: EffectNodeMod Dataset 
+    GDS --&gt;&gt; Rds: Get Effect Node Mod into Redis
+    opt Redis execution error
+      GDS --&gt;&gt; GC: return Error (code = Not Found) 
+    end
+
+  end
+
+  Note over GC,Rds : Pack into Gameset, return the gameset dataset
+  GDS -&gt;&gt; GC: return GameDataSet  
+
+</div></code></code></pre>
+  <h4 id="quitgame">QuitGame</h4>
+  <p>end the game, to clear the game data from Redis, broadcast the message if the game is sudden quit game.</p>
+  <ul>
+    <li>Request : <a href="#ULZProto.GDCreateReq">GDCreateReq</a></li>
+    <li>Response : <a href="#ULZProto.Empty">Empty</a></li>
+  </ul>
+  <h5 id="work-flow-2">Work Flow</h5>
+  <pre><code class="language-mermaid"><code><div class="mermaid">sequenceDiagram 
+participant OGC as Other Game Client
+participant GC as Game Client
+participant GDS as Game Duel Service
+participant Rds as Redis
+
+  GC --&gt;&gt; GDS: QuitGame ( GDCreateReq )
+
+  Note over GC,Rds : Get the Data set if exist
+  GDS --&gt;&gt; Rds: Get the GameSet to Redis
+  opt Redis execution error
+    GDS --&gt;&gt; GC: return Error (code = Not Found) 
+  end
+
+  Note over GC,Rds : Get the PhaseSnapMod Data set 
+  GDS --&gt;&gt; Rds: Get PhaseSnapMod into Redis
+  opt Redis execution error
+    GDS --&gt;&gt; GC: return Error (code = Not Found) 
+  end
+
+  GDS --&gt;&gt; GDS: Check the gameset is normal GameQuit?
+  alt EventHookPhase:GameEnd
+    GDS --&gt;&gt; Rds: Remove the related dataset 
+    opt Redis execution error
+      GDS --&gt;&gt; GC: return Error (code = Not Found) 
+    end
+  end
+  alt EventHookPhase: (Other Phase)
+    Note over GC,Rds: raise &quot;GiveUpMessage&quot;
+    GDS --&gt;&gt; GC: broadcast the &quot;GiveUpMessage&quot;
+    GDS --&gt;&gt; GC: broadcast the &quot;GiveUpMessage&quot;
+    GDS --&gt;&gt; GDS: Set as EventHookPhase:GameEnd
+  end
+  GDS -&gt;&gt; GC: return GameDataSet  
+
+</div></code></code></pre>
+  <h4 id="instseteventcard">InstSetEventCard</h4>
+  <ul>
+    <li>Request : <a href="#ULZProto.GDInstanceDT">GDInstanceDT</a></li>
+    <li>Response: <a href="#ULZProto.Empty">Empty</a><br>
+      instance event card move
+      Remark: client should reduce the frequence of requesting this</li>
+  </ul>
+  <pre><code class="language-mermaid"><code><div class="mermaid">sequenceDiagram 
+participant OGC as Other Game Client
+participant GC as Game Client
+participant GDS as Game Duel Service
+participant Rds as Redis
+
+  GC --&gt;&gt; GDS: InstSetEventCard ( GDInstanceDT )
+
+  Note over GC,Rds : Set the income message to Redis
+  GDS --&gt;&gt; Rds: Set the income message to Redis
+
+  Note over GC,Rds : forward instance Event-card message to other game client  
+  GDS --&gt;&gt; OGC: Broadcast instance Event-card message 
+  
+  Note over GC,Rds : Get the Host/Duel EventCardDeck 
+  GDS --&gt;&gt; Rds: Get Host/Duel EventCardDeck into Redis
+  opt Redis execution error
+    GDS --&gt;&gt; GC: return Error (code = Not Found) 
+  end
+
+  Note over GC,Rds : Edit the Host/Duel EventCardDeck's card as income EventCard 
+  GDS --&gt;&gt; GDS: update the eventcard data in Host/Duel-EventCardDeck
+  GDS --&gt;&gt; Rds: Set Host/Duel EventCardDeck into Redis
+  opt Redis execution error
+    GDS --&gt;&gt; GC: return Error (code = InternalError) 
+  end
+
+  GDS --&gt;&gt; GC: return Complete Status (Empty)  
+
+</div></code></code></pre>
+  <h3 id="event-phase--common-handle">Event Phase : Common handle</h3>
+  <h4 id="eventphaseconfirm">EventPhaseConfirm</h4>
+  <ul>
+    <li>
+      <p>Request : <a href="#ULZProto.GDPhaseConfirmReq">GDPhaseConfirmReq</a></p>
+    </li>
+    <li>
+      <p>Response : <a href="#ULZProto.Empty">Empty</a></p>
+      <p>Event-Phase : Confirm</p>
+      <!-- NOTE: Once the Server send any phase notify the client may send feedback to server that ready for phase  -->
+      <p>Current no implement for it</p>
+    </li>
+  </ul>
+  <h4 id="eventphaseresult">EventPhaseResult</h4>
+  <ul>
+    <li>Request : <a href="#ULZProto.GDGetInfoReq">GDGetInfoReq</a></li>
+    <li>Response : <a href="#ULZProto.GDPhaseConfirmResp">GDPhaseConfirmResp</a></li>
+  </ul>
+  <p>Event-Phase : Confirm</p>
+  <p>NOTE: Once the Server send any phase notify the client may send feedback to server that ready for phase</p>
+  <pre><code class="language-c"><div><span class="hljs-comment">// ----- any phase with hook-type : before . after</span>
+[any_phase:before] {
+  executeEffectNode()
+}
+
+[any_phase:after] {
+  executeEffectNode()
+}
+
+
+<span class="hljs-comment">// ---- start_turn_phase</span>
+[start_turn_phase:proxy] {
+  <span class="hljs-number">1.</span> turn ++
+
+}
+<span class="hljs-comment">// -------------------------------------</span>
+<span class="hljs-comment">// draw-phase</span>
+<span class="hljs-comment">// ---- refill_action_card_phase</span>
+[refill_action_card_phase:proxy] {
+
+}
+
+<span class="hljs-comment">// ---- determine_battle_point_phase</span>
+[determine_battle_point_phase:proxy] {
+  <span class="hljs-number">1.</span> skill calculation
+}
+
+<span class="hljs-comment">// ----- battle_result_phase</span>
+[battle_result_phase : proxy] {
+  <span class="hljs-number">1.</span> dice-roll from sub-client
+  <span class="hljs-number">2.</span> store dice-roll first-result
+}
+<span class="hljs-comment">// ----- damage_phase -----</span>
+[damage_phase : proxy] {
+
+}
+<span class="hljs-comment">// ----- dead_chara_change_phase -----</span>
+[dead_chara_change_phase : proxy] {
+
+}
+<span class="hljs-comment">// ----- determine_dead_chara_change_phase -----</span>
+[determine_dead_chara_change_phase : proxy] {
+
+}
+
+</div></code></pre>
+  <h4 id="work-flow-3">work flow</h4>
+  <pre><code class="language-mermaid"><code><div class="mermaid">sequenceDiagram 
+participant GC as Game Client
+participant GDS as Game Duel Service
+%%participant Skl as Skill 
+participant Rds as Redis
+
+  GC --&gt;&gt; GDS: InstSetEventCard ( GDGetInfoReq )
+
+  Note over GC,Rds : Get the PhaseSnapMod 
+  GDS --&gt;&gt; Rds: Get PhaseSnapMod into Redis
+  opt Redis execution error
+    GDS --&gt;&gt; GC: return Error (code = Not Found) 
+  end
+
+  Note over GC,Rds : check it is vaid 
+  GDS --&gt;&gt; GDS: check EventHookPhase &amp; EventHookType is same 
+  opt Redis execution error
+    GDS --&gt;&gt; GC: return Error (code = Invalid Arg) 
+  end
+
+  GDS --&gt;&gt; GDS: Set isReadyFlag by the request plasyer side 
+
+  Note over GC,Rds : Set the Updated PhaseSnapMod EventCardDeck 
+  GDS --&gt;&gt; Rds: Set Updated PhaseSnapMod EventCardDeck into Redis
+  opt Redis execution error
+    GDS --&gt;&gt; GC: return Error (code = Internal) 
+  end
+
+  alt if Both side ready 
+    Note over GC,Rds : Both side ready, then move next phase in new routine process 
+    par : get required game set data from Redis
+      GDS-&gt;&gt;Rds: Get GameSet Data Redis
+    and : get effect-node-snap-mod data from Redis
+      GDS-&gt;&gt;Rds: Get EffectNodeSnapMod Data Redis
+    end
+
+    GDS --&gt;&gt; GDS : run moveNextPhase()
+  end
+
+  Note over GC,Rds : Finally, return Complete Status
+
+  GDS --&gt;&gt; GC: return Complete Status (GDPhaseConformResp)  
+
+</div></code></code></pre>
+  <hr>
+  <h3 id="draw-phase">Draw Phase</h3>
+  <p>Draw-phase : confirm<br>
+    NOTE: After Broadcast Send
+    [refill_action_card_phase], Client set the event-card by &lt;InstSetEventCard&gt; { from their deck to own hand };
+    then, send this &lt;DrawPhaseConfirm&gt; to notify the server that
+    <code>client ready to start next phase [move_card_drop_phase]</code></p>
+  <h4 id="drawphaseconfirm">DrawPhaseConfirm</h4>
+  <ul>
+    <li>Request : <a href="#ULZProto.GDGetInfoReq">GDGetInfoReq</a></li>
+    <li>Response: <a href="#ULZProto.Empty">Empty</a></li>
+  </ul>
+  <p>this comfirm request is for response the GameDuelService after GDS send the drawed cards to Host player and Duel
+    player
+    Basically, it is similar with EventPhaseConfirm</p>
+  <h4 id="work-flow-4">Work Flow</h4>
+  <pre><code class="language-mermaid"><code><div class="mermaid">sequenceDiagram 
+participant GC as Game Client
+participant GDS as Game Duel Service
+%%participant Skl as Skill 
+participant Rds as Redis
+
+  GC --&gt;&gt; GDS: InstSetEventCard ( GDGetInfoReq )
+
+  Note over GC,Rds : Get the PhaseSnapMod  
+  GDS --&gt;&gt; Rds: Get PhaseSnapMod from Redis
+  opt Redis execution error
+    GDS --&gt;&gt; GC: return Error (code = Not Found) 
+  end
+
+  Note over GC,Rds : check it is vaid 
+  GDS --&gt;&gt; GDS: check EventHookPhase &amp; EventHookType is same 
+  opt Redis execution error
+    GDS --&gt;&gt; GC: return Error (code = Invalid Arg) 
+  end
+
+  GDS --&gt;&gt; GDS: Set isReadyFlag by the request plasyer side 
+
+  Note over GC,Rds : Set the Updated PhaseSnapMod EventCardDeck 
+  GDS --&gt;&gt; Rds: Set Updated PhaseSnapMod EventCardDeck into Redis
+  opt Redis execution error
+    GDS --&gt;&gt; GC: return Error (code = Internal) 
+  end
+
+  alt if Both side ready 
+    Note over GC,Rds : Both side ready, then move next phase in new routine process 
+    par : get required game set data from Redis
+      GDS-&gt;&gt;Rds: Get GameSet Data Redis
+    and : get effect-node-snap-mod data from Redis
+      GDS-&gt;&gt;Rds: Get EffectNodeSnapMod Data Redis
+    end
+
+    GDS --&gt;&gt; GDS : run moveNextPhase()
+  end
+
+  Note over GC,Rds : Finally, return Complete Status
+
+  GDS --&gt;&gt; GC: return Complete Status (GDPhaseConformResp)  
+</div></code></code></pre>
+  <hr>
+  <h3 id="move-phase">Move PHase</h3>
+  <p>Move-phase : confirm</p>
+  <p>NOTE: After Broadcast Send &lt;[move_card_drop_phase]&gt;, Client set the event-card by &lt;InstSetEventCard&gt; {
+    from their own hand to out-side }; Then send this &lt;MovePhaseConfirm&gt; to notify the server that
+    <code>client ready to start next phase [determine_move_phase]</code></p>
+  <h4 id="movephaseconfirm">MovePhaseConfirm</h4>
+  <ul>
+    <li>Request: <a href="#ULZProto.GDMoveConfirmReq">GDMoveConfirmReq</a></li>
+    <li>Response: <a href="#ULZProto.Empty">Empty</a></li>
+  </ul>
+  <h4 id="movephaseresult">MovePhaseResult</h4>
+  <ul>
+    <li>Request : <a href="#ULZProto.GDGetInfoReq">GDGetInfoReq</a></li>
+    <li>Response: <a href="#ULZProto.GDMoveConfirmResp">GDMoveConfirmResp</a></li>
+  </ul>
+  <h4 id="work-flow-5">Work Flow</h4>
+  <pre><code class="language-mermaid"><code><div class="mermaid">sequenceDiagram 
+participant OGC as Other Game Client
+participant GC as Game Client
+participant GDS as Game Duel Service
+participant Rds as Redis
+participant Skl as Skill Calculation Service 
+
+  Note over GC,Skl : Suppose EventHookPhase is [move_card_drop_phase] 
+  GC --&gt;&gt; GDS: MovePhaseConfirm ( GDMoveConfirmReq )
+
+  Note over GC,Rds : Get the Required Dataset (with Async Waitgroup)
+  par get GameSet Data 
+    GDS --&gt;&gt; Rds: Get Gameset from Redis
+    opt Redis execution error
+      GDS --&gt;&gt; GC: return Error (code = Not Found) 
+    end
+
+  and get MovePhaseSnapMod
+    GDS --&gt;&gt; Rds: Get MovePhaseSnapMod from Redis
+    opt Redis execution error
+      GDS --&gt;&gt; GC: return Error (code = Not Found) 
+    end
+
+  and get the PhaseSnapMod  
+    GDS --&gt;&gt; Rds: Get PhaseSnapMod from Redis
+    opt Redis execution error
+      GDS --&gt;&gt; GC: return Error (code = Not Found) 
+    end
+
+  and get the EffectNodeSnapMod 
+    GDS --&gt;&gt; Rds: Get EffectNodeSnapMod from Redis
+    opt Redis execution error
+      GDS --&gt;&gt; GC: return Error (code = Not Found) 
+    end
+  end
+%%% ------------------------------------
+  Note over GC,Rds : check it is vaid 
+  GDS --&gt;&gt; GDS: check EventHookPhase &amp; EventHookType is same 
+  opt Redis execution error
+    GDS --&gt;&gt; GC: return Error (code = Invalid Arg) 
+  end
+%%% ------------------------------------
+  Note over GC,Rds : check the disable-skill is involved in the EffectNodeResult
+  GDS --&gt;&gt; GDS: check disable-skill is involved
+  alt is exist :
+    GDS --&gt;&gt; GDS: set move-point as income net move-point 
+  else not exist: 
+    GDS --&gt;&gt; Skl: request Skill-Calculation
+    opt Skill-Calculation execution error
+      Skl --&gt;&gt; GDS: return Error (code = Invalid Arg) 
+    end
+    GDS --&gt;&gt; GDS: set the result value to move-point
+    GDS --&gt;&gt; GDS: add the EffectNode if the Skill generate new EffectNode
+  end
+%%% ------------------------------------
+  Note over GC,Rds : Calculate the EffectNode involved in move-drop-phase
+  GDS --&gt;&gt; GDS: add move-point value from the EffectNode
+%%% ------------------------------------
+  Note over GC,Rds : update the ready flag
+  GDS --&gt;&gt; GDS: Set isReadyFlag by the request plasyer side 
+%%% ------------------------------------
+
+  Note over GC,Rds : Set the updated Dataset (with Async Waitgroup)
+  par Set GameSet Data 
+    GDS --&gt;&gt; Rds: Set Gameset from Redis
+    opt Redis execution error
+      GDS --&gt;&gt; GC: return Error (code = Not Found) 
+    end
+
+  and set MovePhaseSnapMod
+    GDS --&gt;&gt; Rds: set MovePhaseSnapMod from Redis
+    opt Redis execution error
+      GDS --&gt;&gt; GC: return Error (code = Not Found) 
+    end
+
+  and set the PhaseSnapMod  
+    GDS --&gt;&gt; Rds: set PhaseSnapMod from Redis
+    opt Redis execution error
+      GDS --&gt;&gt; GC: return Error (code = Not Found) 
+    end
+
+  and set the EffectNodeSnapMod 
+    GDS --&gt;&gt; Rds: set EffectNodeSnapMod from Redis
+    opt Redis execution error
+      GDS --&gt;&gt; GC: return Error (code = Not Found) 
+    end
+  end
+%%% -------------------------------------
+  Note over GC,Rds: Broadcast the &quot;Host/Dueler Player is Ready&quot;  
+  GDS --&gt;&gt; GC: Broadcast the &quot;Host/Dueler Player is Ready&quot;
+  GDS --&gt;&gt; OGC: Broadcast the &quot;Host/Dueler Player is Ready&quot;
+
+
+%%% -------------------------------------
+  alt if Both side ready 
+    Note over GC,Rds : Both side ready, then move next phase in new routine process 
+    Note over GC,Rds: Broadcast the &quot;Both Side is Ready&quot;  
+    GDS --&gt;&gt; GC: Broadcast the &quot;Host/Dueler Player is Ready&quot;
+    GDS --&gt;&gt; OGC: Broadcast the &quot;Host/Dueler Player is Ready&quot;
+    GDS --&gt;&gt; GDS: run moveNextPhase( EventHookPhase:MoveDropPhase, EventHookType:After  )[see below]
+  end
+
+  Note over GC,Rds : Finally, return Complete Status
+  GDS --&gt;&gt; GC: return Complete Status (Empty)  
+
+</div></code></code></pre>
+  <pre><code class="language-mermaid"><code><div class="mermaid">graph TB
+  subgraph EventHookPhase
+    id_1[MoveDropPhase,Proxy]
+    id_2[MoveDropPhase,After]
+    id_3[DetermineMovePhase,Before]
+    id_4[DetermineMovePhase,Proxy]
+    id_5[DetermineMovePhase,After]
+    id_6[FinishMovePhase,Before]
+    id_7[FinishMovePhase,Proxy]
+    id_8[FinishMovePhase,After]
+  end
+  subgraph REquest
+
+  hd_1[MovePhaseConfirm]
+  hd_2[EventPhaseResult]
+  hd_2_1[EventPhaseResult]
+  hd_2_2[EventPhaseResult]
+  hd_2_3[EventPhaseResult]
+  hd_2_4[EventPhaseResult]
+  hd_3[MovePhaseResult]
+  end
+
+  id_1 --&gt; hd_1 --&gt; id_2 --&gt; hd_2 --&gt; id_3  --&gt; hd_2_1 --&gt;id_4 --&gt; hd_2_2 --&gt; id_5 --&gt; hd_2_3 --&gt; id_6 --&gt;hd_2_4 --&gt; id_7 --&gt; hd_3 --&gt; id_8
+</div></code></code></pre>
+  <hr>
+  <h3 id="attack--defence-phase">Attack / Defence Phase</h3>
+  <h4 id="adphaseconfirm">ADPhaseConfirm</h4>
+  <ul>
+    <li>Request : <a href="#ULZProto.GDADConfirmReq">GDADConfirmReq</a></li>
+    <li>Response : <a href="#ULZProto.Empty">Empty</a></li>
+  </ul>
+  <h5 id="work-flow-for-attacker-attack-card-drop-phase">Work Flow for Attacker (Attack-Card-Drop-Phase)</h5>
+  <pre><code class="language-mermaid"><code><div class="mermaid">sequenceDiagram 
+participant OGC as Other Game Client
+participant GC as Game Client
+participant GDS as Game Duel Service
+participant Rds as Redis
+participant Skl as Skill Calculation Service 
+
+  Note over GC,Skl : Suppose EventHookPhase is [attack_card_drop_phase] 
+  GC --&gt;&gt; GDS: ADPhaseConfirm ( GDADConfirmReq )
+
+  Note over GC,Rds : Get the Required Dataset (with Async Waitgroup)
+  par get GameSet Data 
+    GDS --&gt;&gt; Rds: Get Gameset from Redis
+    opt Redis execution error
+      GDS --&gt;&gt; GC: return Error (code = Not Found) 
+    end
+
+  and get ADPhaseSnapMod
+    GDS --&gt;&gt; Rds: Get ADPhaseSnapMod from Redis
+    opt Redis execution error
+      GDS --&gt;&gt; GC: return Error (code = Not Found) 
+    end
+
+  and get the PhaseSnapMod  
+    GDS --&gt;&gt; Rds: Get PhaseSnapMod from Redis
+    opt Redis execution error
+      GDS --&gt;&gt; GC: return Error (code = Not Found) 
+    end
+
+  and get the EffectNodeSnapMod 
+    GDS --&gt;&gt; Rds: Get EffectNodeSnapMod from Redis
+    opt Redis execution error
+      GDS --&gt;&gt; GC: return Error (code = Not Found) 
+    end
+  end
+%%% ------------------------------------
+  Note over GC,Rds : check it is vaid 
+  GDS --&gt;&gt; GDS: check EventHookPhase &amp; EventHookType is same to PhaseSnapMod
+  opt Redis execution error
+    GDS --&gt;&gt; GC: return Error (code = Invalid Arg) 
+  end
+
+%%% ------------------------------------
+
+  Note over GC,Rds: Attack Handle  
+  GDS --&gt;&gt; GDS: set income data to ADPhaseSnapMod
+
+  GDS --&gt;&gt; GDS: check disable-skill is involved
+  alt is exist :
+    GDS --&gt;&gt; GDS: set attack-point as income net attack-point 
+  else not exist: 
+    GDS --&gt;&gt; Skl: request Skill-Calculation
+    opt Skill-Calculation execution error
+      Skl --&gt;&gt; GDS: return Error (code = Invalid Arg) 
+    end
+    GDS --&gt;&gt; GDS: set the result value to move-point
+    GDS --&gt;&gt; GDS: add the EffectNode if the Skill generate new EffectNode
+  end
+  %%% ------------------------------------
+    Note over GC,Rds : Calculate the EffectNode involved in attack-card-drop-phase
+    GDS --&gt;&gt; GDS: add attack-point value from the EffectNode
+    GDS --&gt;&gt; GDS: check disable attack flag in EffectNode
+  %%% ------------------------------------
+  
+    Note over GC,Rds : Set the updated Dataset (with Async Waitgroup)
+    par Set GameSet Data 
+      GDS --&gt;&gt; Rds: Set Gameset from Redis
+      opt Redis execution error
+        GDS --&gt;&gt; GC: return Error (code = Not Found) 
+      end
+
+    and set ADPhaseSnapMod
+      GDS --&gt;&gt; Rds: set ADPhaseSnapMod from Redis
+      opt Redis execution error
+        GDS --&gt;&gt; GC: return Error (code = Not Found) 
+      end
+
+    and set the PhaseSnapMod  
+      GDS --&gt;&gt; Rds: set PhaseSnapMod from Redis
+      opt Redis execution error
+        GDS --&gt;&gt; GC: return Error (code = Not Found) 
+      end
+
+    and set the EffectNodeSnapMod 
+      GDS --&gt;&gt; Rds: set EffectNodeSnapMod from Redis
+      opt Redis execution error
+        GDS --&gt;&gt; GC: return Error (code = Not Found) 
+      end
+    end
+  %%% -------------------------------------
+    Note over GC,Rds: Broadcast the &quot;AD_PHASE:ATK_RESULT:%value&quot;  
+    GDS --&gt;&gt; GC: Broadcast the &quot;AD_PHASE:ATK_RESULT:%value&quot;
+    GDS --&gt;&gt; OGC: Broadcast the &quot;AD_PHASE:ATK_RESULT:%value&quot;
+
+
+  Note over GC,Rds : Finally, return Complete Status
+  GDS --&gt;&gt; GC: return Complete Status (Empty)  to Game Client( Attacker )
+
+  Note over GC,Skl : Then, Wait for both side client requesting [ADPhaseResult] as Acknowledge 
+</div></code></code></pre>
+  <hr>
+  <h5 id="work-flow-for-defence-defence-card-drop-phase">Work Flow for Defence (Defence-Card-Drop-Phase)</h5>
+  <pre><code class="language-mermaid"><code><div class="mermaid">sequenceDiagram 
+participant OGC as Other Game Client
+participant GC as Game Client
+participant GDS as Game Duel Service
+participant Rds as Redis
+participant Skl as Skill Calculation Service 
+
+  Note over GC,Skl : Suppose EventHookPhase is [defence_card_drop_phase] 
+  GC --&gt;&gt; GDS: ADPhaseConfirm ( GDADConfirmReq )
+
+  Note over GC,Rds : Get the Required Dataset (with Async Waitgroup)
+  par get GameSet Data 
+    GDS --&gt;&gt; Rds: Get Gameset from Redis
+    opt Redis execution error
+      GDS --&gt;&gt; GC: return Error (code = Not Found) 
+    end
+
+  and get ADPhaseSnapMod
+    GDS --&gt;&gt; Rds: Get ADPhaseSnapMod from Redis
+    opt Redis execution error
+      GDS --&gt;&gt; GC: return Error (code = Not Found) 
+    end
+
+  and get the PhaseSnapMod  
+    GDS --&gt;&gt; Rds: Get PhaseSnapMod from Redis
+    opt Redis execution error
+      GDS --&gt;&gt; GC: return Error (code = Not Found) 
+    end
+
+  and get the EffectNodeSnapMod 
+    GDS --&gt;&gt; Rds: Get EffectNodeSnapMod from Redis
+    opt Redis execution error
+      GDS --&gt;&gt; GC: return Error (code = Not Found) 
+    end
+  end
+%%% ------------------------------------
+  Note over GC,Rds : check it is vaid 
+  GDS --&gt;&gt; GDS: check EventHookPhase &amp; EventHookType is same to PhaseSnapMod
+  opt Redis execution error
+    GDS --&gt;&gt; GC: return Error (code = Invalid Arg) 
+  end
+
+%%% ------------------------------------
+
+  Note over GC,Rds: Defence Handle  
+  GDS --&gt;&gt; GDS: set income data to ADPhaseSnapMod
+
+  GDS --&gt;&gt; GDS: check disable-skill is involved
+  alt is exist :
+    GDS --&gt;&gt; GDS: set def-point as income net def-point 
+  else not exist: 
+    GDS --&gt;&gt; Skl: request Skill-Calculation
+    opt Skill-Calculation execution error
+      Skl --&gt;&gt; GDS: return Error (code = Invalid Arg) 
+    end
+    GDS --&gt;&gt; GDS: set the result value to move-point
+    GDS --&gt;&gt; GDS: add the EffectNode if the Skill generate new EffectNode
+  end
+  %%% ------------------------------------
+    Note over GC,Rds : Calculate the EffectNode involved in defence-card-drop-phase
+    GDS --&gt;&gt; GDS: add defence-point value from the EffectNode
+    GDS --&gt;&gt; GDS: check disable defence flag in EffectNode
+  %%% ------------------------------------
+  
+    Note over GC,Rds : Set the updated Dataset (with Async Waitgroup)
+    par Set GameSet Data 
+      GDS --&gt;&gt; Rds: Set Gameset from Redis
+      opt Redis execution error
+        GDS --&gt;&gt; GC: return Error (code = Not Found) 
+      end
+
+    and set ADPhaseSnapMod
+      GDS --&gt;&gt; Rds: set ADPhaseSnapMod from Redis
+      opt Redis execution error
+        GDS --&gt;&gt; GC: return Error (code = Not Found) 
+      end
+
+    and set the PhaseSnapMod  
+      GDS --&gt;&gt; Rds: set PhaseSnapMod from Redis
+      opt Redis execution error
+        GDS --&gt;&gt; GC: return Error (code = Not Found) 
+      end
+
+    and set the EffectNodeSnapMod 
+      GDS --&gt;&gt; Rds: set EffectNodeSnapMod from Redis
+      opt Redis execution error
+        GDS --&gt;&gt; GC: return Error (code = Not Found) 
+      end
+    end
+  %%% -------------------------------------
+    Note over GC,Rds: Broadcast the &quot;AD_PHASE:DEF_RESULT:%value&quot;  
+    GDS --&gt;&gt; GC: Broadcast the &quot;AD_PHASE:DEF_RESULT:%value&quot;
+    GDS --&gt;&gt; OGC: Broadcast the &quot;AD_PHASE:DEF_RESULT:%value&quot;
+
+  Note over GC,Rds : Finally, return Complete Status
+  GDS --&gt;&gt; GC: return Complete Status (Empty) to Game Client( Defencer )
+
+  Note over GC,Skl : Then, Wait for both side client requesting [ADPhaseResult] as Acknowledge 
+</div></code></code></pre>
+  <h4 id="adphaseresult">ADPhaseResult</h4>
+  <ul>
+    <li>Request : <a href="#ULZProto.GDGetInfoReq">GDGetInfoReq</a></li>
+    <li>Response : <a href="#ULZProto.GDADResultResp">GDADResultResp</a></li>
+  </ul>
+  <h5 id="work-flow-6">Work Flow</h5>
+  <pre><code class="language-mermaid"><code><div class="mermaid">sequenceDiagram 
+participant OGC as Other Game Client
+participant GC as Game Client
+participant GDS as Game Duel Service
+participant Rds as Redis
+participant Skl as Skill Calculation Service 
+
+  Note over GC,Skl : Suppose EventHookPhase is [***_card_drop_phase] 
+  GC --&gt;&gt; GDS: ADPhaseResult ( GDGetInfoReq )
+
+  Note over GC,Rds : Get the Required Dataset (with Async Waitgroup)
+  par get ADPhaseSnapMod
+    GDS --&gt;&gt; Rds: Get ADPhaseSnapMod from Redis
+    %% activate Rds
+    opt Redis execution error
+      GDS --&gt;&gt; GC: return Error (code = Not Found) 
+    end
+
+  and get the PhaseSnapMod  
+    GDS --&gt;&gt; Rds: Get PhaseSnapMod from Redis
+    opt Redis execution error
+      GDS --&gt;&gt; GC: return Error (code = Not Found) 
+    end
+  end
+%%% ------------------------------------
+  Note over GC,Rds : check it is vaid 
+  GDS --&gt;&gt; GDS: check EventHookPhase &amp; EventHookType is same to PhaseSnapMod
+  opt Redis execution error
+    GDS --&gt;&gt; GC: return Error (code = Invalid Arg) 
+  end
+%%% ------------------------------------
+  Note over GC,Rds : update the ready flag
+    GDS --&gt;&gt; Rds: Update PhaseSnapMod
+    opt Redis execution error
+      GDS --&gt;&gt; GC: return Error (code = Internal) 
+    end
+%%% ------------------------------------
+    GDS --&gt;&gt; GDS: Setup return message
+
+%%% -------------------------------------
+  alt if Both side ready 
+    Note over GC,Rds: Broadcast the &quot;Both Side is Ready&quot;  
+    GDS --&gt;&gt; GC: Broadcast the &quot;AD_PHASE:ACK_Both_SideResolve:&quot;
+    GDS --&gt;&gt; OGC: Broadcast the &quot;AD_PHASE:ACK_Both_SideResolve:&quot;
+
+    Note over GC,Rds : Both side ready, then move next phase in new routine process 
+    GDS --&gt;&gt; GDS: run moveNextPhase( EventHookPhase:MoveDropPhase, EventHookType:After  )[see below]
+  end
+
+  Note over GC,Rds : Finally, return packed message [ ADResultResp ]
+  GDS --&gt;&gt; GC: return Complete Status (Empty) to Game Client( Defencer )
+</div></code></code></pre>
+  <h4 id="adphasediceresult">ADPhaseDiceResult</h4>
+  <ul>
+    <li>Request : <a href="#ULZProto.GDGetInfoReq">GDGetInfoReq</a></li>
+    <li>Response : <a href="#ULZProto.GDADDiceResult">GDADDiceResult</a></li>
+  </ul>
+  <p>Important: Code is not implement</p>
+  <pre><code class="language-mermaid"><code><div class="mermaid">sequenceDiagram 
+%% participant OGC as Other Game Client
+participant GC as Game Client
+participant GDS as Game Duel Service
+participant Rds as Redis
+participant Skl as Skill Calculation Service 
+
+
+  Note over GC,Skl: from MoveNextPhase [DeferenceCardDropPhase] -&gt; [DetermineBattlePointPhase]
+  Note over GC,Skl : Suppose EventHookPhase is [determine_battle_point_phase] 
+
+  Note over GC,Rds : Get the Required Dataset (with Async Waitgroup)
+  par update HostEventCardDeck Move {Outside} to {Destroy} 
+    GDS --&gt;&gt; Rds: update HostEventCardDeck from Redis
+    opt Redis execution error
+      GDS --&gt;&gt; GC: return Error (code = Not Found) 
+    end
+
+  and update DuelEventCardDeck Move {Outside} to {Destroy}
+    GDS --&gt;&gt; Rds: Update DuelEventCardDeck from Redis
+    opt Redis execution error
+      GDS --&gt;&gt; GC: return Error (code = Not Found) 
+    end
+  end
+%%% ------------------------------------
+  Note over GC,Rds: Broadcast the &quot;DetermineBattlePointPhase:Complete&quot;  
+  GDS --&gt;&gt; GC: Broadcast the &quot;DetermineBattlePointPhase:Complete&quot;
+  %%GDS --&gt;&gt; OGC: Broadcast the &quot;DetermineBattlePointPhase:Complete&quot;
+%%% ------------------------------------
+  Note over GC,Skl : Wait for EventPhaseResult as Acknowledge 
+
+</div></code></code></pre>
+  <pre><code class="language-mermaid"><code><div class="mermaid">sequenceDiagram 
+%% participant OGC as Other Game Client
+participant GC as Game Client
+participant GDS as Game Duel Service
+participant Rds as Redis
+participant Skl as Skill Calculation Service 
+
+
+  Note over GC,Skl: from MoveNextPhase  [DetermineBattlePointPhase] -&gt; [BattleResultPhase]
+  Note over GC,Skl : Suppose EventHookPhase is [determine_battle_point_phase] 
+
+  Note over GC,Rds : Get the Required Dataset (with Async Waitgroup)
+  par Dice Calculate for attacker  
+    GDS --&gt;&gt; Skl: request DiceCalculate for Attack
+  and Dice Calculate for defencer
+    GDS --&gt;&gt; Skl: request DiceCalculate for Defence
+  end
+
+  Note over GC,Rds : Store Dice Result 
+    GDS--&gt;&gt;Rds: Set GDADDiceResult to Redis
+
+%%% ------------------------------------
+  Note over GC,Rds: Broadcast the &quot;DiceResult:%value&quot;  
+  GDS --&gt;&gt; GC: Broadcast the &quot;DiceResult:%value&quot;
+%%% ------------------------------------
+  Note over GC,Skl : Wait for ADDiceResult as Acknowledge 
+
+</div></code></code></pre>
+  <pre><code class="language-mermaid"><code><div class="mermaid">sequenceDiagram 
+participant OGC as Other Game Client
+participant GC as Game Client
+participant GDS as Game Duel Service
+participant Rds as Redis
+participant Skl as Skill Calculation Service 
+
+  Note over GC,Skl : Suppose EventHookPhase is [battle_result_phase] 
+  GC --&gt;&gt; GDS: ADPhaseDiceResult ( GDGetInfoReq )
+
+  Note over GC,Rds : Get the Required Dataset (with Async Waitgroup)
+  par get ADDiceResult
+    GDS --&gt;&gt; Rds: Get ADDiceResult
+    %% activate Rds
+    opt Redis execution error
+      GDS --&gt;&gt; GC: return Error (code = Not Found) 
+    end
+
+  and get the PhaseSnapMod  
+    GDS --&gt;&gt; Rds: Get PhaseSnapMod from Redis
+    opt Redis execution error
+      GDS --&gt;&gt; GC: return Error (code = Not Found) 
+    end
+  end
+%%% ------------------------------------
+  Note over GC,Rds : check it is vaid 
+  GDS --&gt;&gt; GDS: check EventHookPhase &amp; EventHookType is same to PhaseSnapMod
+  opt Redis execution error
+    GDS --&gt;&gt; GC: return Error (code = Invalid Arg) 
+  end
+%%% ------------------------------------
+  Note over GC,Rds : update the ready flag
+    GDS --&gt;&gt; Rds: Update PhaseSnapMod
+    opt Redis execution error
+      GDS --&gt;&gt; GC: return Error (code = Internal) 
+    end
+%%% ------------------------------------
+    GDS --&gt;&gt; GC: return ADDiceResult
+
+%%% -------------------------------------
+  alt if Both side ready 
+    Note over GC,Rds: Broadcast the &quot;Both Side is Ready&quot;  
+    GDS --&gt;&gt; GC: Broadcast the &quot;DiceResult:ACK_Both_SideResolve:&quot;
+    GDS --&gt;&gt; OGC: Broadcast the &quot;DiceResult:ACK_Both_SideResolve:&quot;
+
+    Note over GC,Rds : Both side ready, then move next phase in new routine process 
+    GDS --&gt;&gt; GDS: run moveNextPhase( EventHookPhase:battle_result_phase, EventHookType:After  )[see below]
+  end
+
+  Note over GC,Rds : Finally, return packed message [ ADResultResp ]
+  
+</div></code></code></pre>
+  <hr>
+  <h3 id="change-phase">Change Phase</h3>
+  <h4 id="changephaseconfirm">ChangePhaseConfirm</h4>
+  <ul>
+    <li>Request : <a href="#ULZProto.GDChangeConfirmReq">GDChangeConfirmReq</a></li>
+    <li>Response : <a href="#ULZProto.Empty">Empty</a></li>
+  </ul>
+  <p>ChangeCharaPhase : Confirm and Result</p>
+  <p>FIXME : 3v3 may need it, but 1v1 is not implement;</p>
+  <h4 id="changephaseresult">ChangePhaseResult</h4>
+  <ul>
+    <li>Request : <a href="#ULZProto.GDGetInfoReq">GDGetInfoReq</a></li>
+    <li>Response : <a href="#ULZProto.Empty">Empty</a></li>
+  </ul>
+  <p>ChangeCharaPhase : Confirm and Result</p>
+  <p>FIXME : 3v3 may need it, but 1v1 is not implement;</p>
+  <hr>
+  <h2 id="scalar-value-types">Scalar Value Types</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>.proto Type</th>
+        <th>Notes</th>
+        <th>C++</th>
+        <th>Java</th>
+        <th>Python</th>
+        <th>Go</th>
+        <th>C#</th>
+        <th>PHP</th>
+        <th>Ruby</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a name="double" /> double</td>
+        <td></td>
+        <td>double</td>
+        <td>double</td>
+        <td>float</td>
+        <td>float64</td>
+        <td>double</td>
+        <td>float</td>
+        <td>Float</td>
+      </tr>
+      <tr>
+        <td><a name="float" /> float</td>
+        <td></td>
+        <td>float</td>
+        <td>float</td>
+        <td>float</td>
+        <td>float32</td>
+        <td>float</td>
+        <td>float</td>
+        <td>Float</td>
+      </tr>
+      <tr>
+        <td><a name="int32" /> int32</td>
+        <td>Uses variable-length encoding. Inefficient for encoding negative numbers – if your field is likely to have
+          negative values, use sint32 instead.</td>
+        <td>int32</td>
+        <td>int</td>
+        <td>int</td>
+        <td>int32</td>
+        <td>int</td>
+        <td>integer</td>
+        <td>Bignum or Fixnum (as required)</td>
+      </tr>
+      <tr>
+        <td><a name="int64" /> int64</td>
+        <td>Uses variable-length encoding. Inefficient for encoding negative numbers – if your field is likely to have
+          negative values, use sint64 instead.</td>
+        <td>int64</td>
+        <td>long</td>
+        <td>int/long</td>
+        <td>int64</td>
+        <td>long</td>
+        <td>integer/string</td>
+        <td>Bignum</td>
+      </tr>
+      <tr>
+        <td><a name="uint32" /> uint32</td>
+        <td>Uses variable-length encoding.</td>
+        <td>uint32</td>
+        <td>int</td>
+        <td>int/long</td>
+        <td>uint32</td>
+        <td>uint</td>
+        <td>integer</td>
+        <td>Bignum or Fixnum (as required)</td>
+      </tr>
+      <tr>
+        <td><a name="uint64" /> uint64</td>
+        <td>Uses variable-length encoding.</td>
+        <td>uint64</td>
+        <td>long</td>
+        <td>int/long</td>
+        <td>uint64</td>
+        <td>ulong</td>
+        <td>integer/string</td>
+        <td>Bignum or Fixnum (as required)</td>
+      </tr>
+      <tr>
+        <td><a name="sint32" /> sint32</td>
+        <td>Uses variable-length encoding. Signed int value. These more efficiently encode negative numbers than regular
+          int32s.</td>
+        <td>int32</td>
+        <td>int</td>
+        <td>int</td>
+        <td>int32</td>
+        <td>int</td>
+        <td>integer</td>
+        <td>Bignum or Fixnum (as required)</td>
+      </tr>
+      <tr>
+        <td><a name="sint64" /> sint64</td>
+        <td>Uses variable-length encoding. Signed int value. These more efficiently encode negative numbers than regular
+          int64s.</td>
+        <td>int64</td>
+        <td>long</td>
+        <td>int/long</td>
+        <td>int64</td>
+        <td>long</td>
+        <td>integer/string</td>
+        <td>Bignum</td>
+      </tr>
+      <tr>
+        <td><a name="fixed32" /> fixed32</td>
+        <td>Always four bytes. More efficient than uint32 if values are often greater than 2^28.</td>
+        <td>uint32</td>
+        <td>int</td>
+        <td>int</td>
+        <td>uint32</td>
+        <td>uint</td>
+        <td>integer</td>
+        <td>Bignum or Fixnum (as required)</td>
+      </tr>
+      <tr>
+        <td><a name="fixed64" /> fixed64</td>
+        <td>Always eight bytes. More efficient than uint64 if values are often greater than 2^56.</td>
+        <td>uint64</td>
+        <td>long</td>
+        <td>int/long</td>
+        <td>uint64</td>
+        <td>ulong</td>
+        <td>integer/string</td>
+        <td>Bignum</td>
+      </tr>
+      <tr>
+        <td><a name="sfixed32" /> sfixed32</td>
+        <td>Always four bytes.</td>
+        <td>int32</td>
+        <td>int</td>
+        <td>int</td>
+        <td>int32</td>
+        <td>int</td>
+        <td>integer</td>
+        <td>Bignum or Fixnum (as required)</td>
+      </tr>
+      <tr>
+        <td><a name="sfixed64" /> sfixed64</td>
+        <td>Always eight bytes.</td>
+        <td>int64</td>
+        <td>long</td>
+        <td>int/long</td>
+        <td>int64</td>
+        <td>long</td>
+        <td>integer/string</td>
+        <td>Bignum</td>
+      </tr>
+      <tr>
+        <td><a name="bool" /> bool</td>
+        <td></td>
+        <td>bool</td>
+        <td>boolean</td>
+        <td>boolean</td>
+        <td>bool</td>
+        <td>bool</td>
+        <td>boolean</td>
+        <td>TrueClass/FalseClass</td>
+      </tr>
+      <tr>
+        <td><a name="string" /> string</td>
+        <td>A string must always contain UTF-8 encoded or 7-bit ASCII text.</td>
+        <td>string</td>
+        <td>String</td>
+        <td>str/unicode</td>
+        <td>string</td>
+        <td>string</td>
+        <td>string</td>
+        <td>String (UTF-8)</td>
+      </tr>
+      <tr>
+        <td><a name="bytes" /> bytes</td>
+        <td>May contain any arbitrary sequence of bytes.</td>
+        <td>string</td>
+        <td>ByteString</td>
+        <td>str</td>
+        <td>[]byte</td>
+        <td>ByteString</td>
+        <td>string</td>
+        <td>String (ASCII-8BIT)</td>
+      </tr>
+    </tbody>
+  </table>
+<script src="mermaid.min.js"></script>
+<script>mermaid.initialize({ startOnLoad: true });</script>
+</body>
+
+</html>

@@ -10,6 +10,7 @@ option csharp_namespace         = "ULZAsset.ProtoMod";
 // SECTION: service.proto
 service SkillEffectService {
 //  Basic Server Function
+
     rpc SkillInstCalc       (SESkillCalReq)             returns (SESkillCalResp);
     rpc SkillCalculate      (SESkillCalReq)             returns (SESkillCalResp);
     rpc EffectCalculate     (SEEffectCalReq)            returns (SEEffectCalResp);

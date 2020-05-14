@@ -6,6 +6,7 @@
 - [Protocol Documentation](#protocol-documentation)
   - [Table of Contents](#table-of-contents)
   - [message.proto](#messageproto)
+  - [General Data Set](#general-data-set)
     - [GDCreateReq](#gdcreatereq)
     - [GDGetInfoReq](#gdgetinforeq)
   - [Broadcast Related](#broadcast-related)
@@ -36,6 +37,7 @@
 
 
 -------------------------------------------------------------
+## General Data Set 
 
 <a name="ULZProto.GDCreateReq"></a>
 
@@ -269,17 +271,14 @@ ATK/DEF-Phase-DiceSet Response
 
 
 
-
-
-
 <a name="ULZProto.GDPhaseConfirmResp"></a>
 
 ### GDPhaseConfirmResp
 
 
-| Field    | Type              | Label | Description          |
-| -------- | ----------------- | ----- | -------------------- |
-| room_key | [string](#string) |       | repeated PhaseEffect |
+| Field    | Type              | Label | Description |
+| -------- | ----------------- | ----- | ----------- |
+| room_key | [string](#string) |       |             |
 
 
 
