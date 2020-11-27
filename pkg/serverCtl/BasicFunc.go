@@ -77,8 +77,8 @@ func (this *ULZGameDuelServiceBackend) CreateGame(ctx context.Context, req *pb.G
 	wg := sync.WaitGroup{}
 	errCh := make(chan error)
 	// event-card-control
-	new_gameset.HostEventCardDeck = genCardSet(150, 0)
-	new_gameset.DuelEventCardDeck = genCardSet(150, 0)
+	new_gameset.HostEventCardDeck = GenCardSet(150, 0)
+	new_gameset.DuelEventCardDeck = GenCardSet(150, 0)
 	wg.Add(4)
 	// Host-Event-Card-Deck
 	fmt.Println("\t Host-Event-Deck-Card gen")
